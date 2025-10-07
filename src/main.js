@@ -1,6 +1,8 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 
+const app = createApp(App);
+
 // Vuetify
 import 'vuetify/styles';
 import { createVuetify } from 'vuetify';
@@ -30,7 +32,21 @@ const vuetify = createVuetify({
   }
 });
 
-createApp(App)
+// vue3-toastify
+import 'vue3-toastify/dist/index.css';
+import Vue3Toastify from 'vue3-toastify';
+
+
+app.use(Vue3Toastify, {
+  autoClose: 3000,
+  position: "top-right",
+  theme: "colored",
+  hideProgressBar: false,
+  pauseOnHover: false,
+  pauseOnFocusLoss: false,
+});
+
+app
   .use(router)
   .use(vuetify)
   .use(pinia)

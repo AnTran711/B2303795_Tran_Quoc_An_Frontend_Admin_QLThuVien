@@ -3,6 +3,10 @@
   import { useBookStore } from '@/stores/useBookStore';
   import { useAuthorStore } from '@/stores/useAuthorStore';
   import { usePublisherStore } from '@/stores/usePublisherStore';
+  import FormAddOrUpdateBook from '@/components/FormAddOrUpdateBook.vue';
+  import Toolbar from '@/components/Toolbar.vue';
+  import Pagination from '@/components/Pagination.vue';
+  import Loading from '@/components/Loading.vue';
 
   const bookStore = useBookStore();
   const authorStore = useAuthorStore();
@@ -11,16 +15,10 @@
     bookStore.fetchBooks();
     authorStore.fetchAuthors();
     publisherStore.fetchPublishers();
-  })
-
-  // filter
-  const itemsFilter = ['Tất cả', 'Còn sách', 'Hết sách'];
-  const selectedFilter = ref('Tất cả');
+  });
 
   // paging
   const bookInPage = 5;
-  const totalPage = computed(() => Math.ceil(bookStore.books.length/bookInPage));
-
   const currentPage = ref(1);
   const pagingBooks = computed(() => {
     const start = bookInPage*(currentPage.value-1);
@@ -56,53 +54,53 @@
   // show form add/update book ----------------------------
   const showForm = ref(false);
 
-  const newBook = reactive({
-    MASACH: null,
-    TENSACH: null,
-    ANHBIA: null,
-    DONGIA: null,
-    SOQUYEN: null,
-    NAMXUATBAN: null,
-    MATACGIA: null,
-    MANXB: null
-  });
+  // const newBook = reactive({
+  //   MASACH: null,
+  //   TENSACH: null,
+  //   ANHBIA: null,
+  //   DONGIA: null,
+  //   SOQUYEN: null,
+  //   NAMXUATBAN: null,
+  //   MATACGIA: null,
+  //   MANXB: null
+  // });
 
-  function handleSubmit() {
-    const formData = new FormData();
-    formData.append('MASACH', newBook.MASACH);
-    formData.append('TENSACH', newBook.TENSACH);
-    formData.append('DONGIA', newBook.DONGIA);
-    formData.append('SOQUYEN', newBook.SOQUYEN);
-    formData.append('NAMXUATBAN', newBook.NAMXUATBAN);
-    formData.append('MATACGIA', newBook.MATACGIA);
-    formData.append('MANXB', newBook.MANXB);
+  // function handleSubmit() {
+  //   const formData = new FormData();
+  //   formData.append('MASACH', newBook.MASACH);
+  //   formData.append('TENSACH', newBook.TENSACH);
+  //   formData.append('DONGIA', newBook.DONGIA);
+  //   formData.append('SOQUYEN', newBook.SOQUYEN);
+  //   formData.append('NAMXUATBAN', newBook.NAMXUATBAN);
+  //   formData.append('MATACGIA', newBook.MATACGIA);
+  //   formData.append('MANXB', newBook.MANXB);
 
-    if (newBook.ANHBIA && newBook.ANHBIA instanceof File) {
-      formData.append('ANHBIA', newBook.ANHBIA);
-    } else if (Array.isArray(newBook.ANHBIA) && newBook.ANHBIA.length > 0) {
-      formData.append('ANHBIA', newBook.ANHBIA[0]);
-    }
+  //   if (newBook.ANHBIA && newBook.ANHBIA instanceof File) {
+  //     formData.append('ANHBIA', newBook.ANHBIA);
+  //   } else if (Array.isArray(newBook.ANHBIA) && newBook.ANHBIA.length > 0) {
+  //     formData.append('ANHBIA', newBook.ANHBIA[0]);
+  //   }
 
-    console.log('Dữ liệu gửi đi:', Object.fromEntries(formData.entries()));
+  //   bookStore.addBook(formData);
 
-    bookStore.addBook(formData);
-
-    showForm.value = false;
-    Object.keys(newBook).forEach(key => newBook[key] = null);
-  }
+  //   showForm.value = false;
+  //   Object.keys(newBook).forEach(key => newBook[key] = null);
+  // }
 
 </script>
 
 <template>
   <div class="pa-4">
-    <!-- Features -->
-    <v-row class="pa-4 bg-white rounded elevation-1 align-center" no-gutters >
+    <!-- Toolbar -->
+    <Toolbar v-model="showForm"></Toolbar>
+    <!-- <v-row class="pa-4 bg-white rounded elevation-1 align-center" no-gutters >
       <v-col class="d-flex align-center" cols="4">
         <v-text-field
           class="mr-2"
           label="Tìm kiếm sách"
           variant="outlined"
           hide-details
+          density="compact"
         />
         <v-btn class="mr-4" color="primary">
           <v-icon>mdi-magnify</v-icon>
@@ -117,6 +115,7 @@
           v-model="selectedFilter"
           hide-details
           variant="outlined"
+          density="compact"
         ></v-select>
       </v-col>
       <v-col cols="2" class="text-right">
@@ -128,7 +127,7 @@
           Thêm sách
         </v-btn>
       </v-col>
-    </v-row>
+    </v-row> -->
 
     <!-- Table -->
     <v-table
@@ -142,7 +141,7 @@
           <th class="text-left">
             Mã sách
           </th>
-          <th class="text-left">
+          <th class="text-center">
             Ảnh bìa
           </th>
           <th class="text-left">
@@ -171,8 +170,7 @@
           <td>
             <v-img
               class="ma-1 rounded"
-              :width="44"
-              aspect-ratio="2/3"
+              :height="66"
               cover
               :src="book.ANHBIA"
             ></v-img>
@@ -244,7 +242,8 @@
     </v-overlay>
 
     <!-- Pagination -->
-    <div
+    <Pagination v-model="currentPage" :book-in-page="bookInPage"></Pagination>
+    <!-- <div
       v-show="bookStore.books.length ? true : false"
       class="text-center mt-3"
     >
@@ -254,19 +253,20 @@
         :length="totalPage"
         :total-visible="7"
       ></v-pagination>
-    </div>
+    </div> -->
 
     <!-- Loading -->
-    <v-overlay
-      :model-value="bookStore.loading"
+    <Loading v-model="bookStore.loading"></Loading>
+    <!-- <v-overlay
+      v-model="bookStore.loading"
       persistent
       class="align-center justify-center"
     >
       <v-progress-circular indeterminate size="64" color="primary" />
-    </v-overlay>
+    </v-overlay> -->
   
     <!-- Message error -->
-    <v-snackbar
+    <!-- <v-snackbar
       v-model="bookStore.errorMessage"
       color="error"
       location="top"
@@ -282,10 +282,10 @@
           Đóng
         </v-btn>
       </template>
-    </v-snackbar>
+    </v-snackbar> -->
 
     <!-- Message successfully -->
-    <v-snackbar
+    <!-- <v-snackbar
       v-model="bookStore.showSuccess"
       color="success"
       location="top"
@@ -303,11 +303,12 @@
           Đóng
         </v-btn>
       </template>
-    </v-snackbar>
+    </v-snackbar> -->
   </div>
 
   <!-- Form thêm/sửa sách -->
-  <v-overlay
+  <FormAddOrUpdateBook v-model="showForm"></FormAddOrUpdateBook>
+  <!-- <v-overlay
     v-model="showForm"
     class="align-center justify-center"
   >
@@ -355,14 +356,10 @@
         <v-btn variant="text" @click="showForm = false">Đóng</v-btn>
       </v-card-actions>
     </v-card>
-  </v-overlay>
+  </v-overlay> -->
 </template>
 
 <style scoped>
-.pd-8 {
-  padding: 8px;
-}
-
 .message-add-book {
   height: 430px;
   text-align: center;

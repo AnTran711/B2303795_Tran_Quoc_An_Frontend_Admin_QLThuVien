@@ -6,7 +6,6 @@ export const useBookStore = defineStore('book', () => {
   //state
   const books = ref([]);
   const loading = ref(false);
-  const showSuccess = ref(false);
   const successMessage = ref(null);
   const errorMessage = ref(null);
 
@@ -27,7 +26,6 @@ export const useBookStore = defineStore('book', () => {
 
   async function addBook(book) {
     loading.value = true;
-    showSuccess.value = false;
     successMessage.value = null;
     errorMessage.value = null;
     try {
@@ -36,7 +34,6 @@ export const useBookStore = defineStore('book', () => {
       });
       books.value.push(res.data);
       successMessage.value = 'Thêm sách thành công';
-      showSuccess.value = true;
     } catch (err) {
       console.error(err.message);
       errorMessage.value = 'Không thể kết nối đến server. Vui lòng thử lại sau';
@@ -47,14 +44,12 @@ export const useBookStore = defineStore('book', () => {
 
   async function deleteBook(id) {
     loading.value = true;
-    showSuccess.value = false;
     successMessage.value = null;
     errorMessage.value = null;
     try {
       await api.delete(`/books/${id}`);
       books.value = books.value.filter(book => book.MASACH !== id);
       successMessage.value = 'Xóa sách thành công';
-      showSuccess.value = true;
     } catch (err) {
       console.error(err.message);
       errorMessage.value = 'Không thể kết nối đến server, vui lòng thử lại sau';
@@ -63,5 +58,5 @@ export const useBookStore = defineStore('book', () => {
     }
   }
 
-  return { books, loading, showSuccess, successMessage, errorMessage, fetchBooks, addBook, deleteBook };
+  return { books, loading, successMessage, errorMessage, fetchBooks, addBook, deleteBook };
 });

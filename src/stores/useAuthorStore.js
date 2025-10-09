@@ -6,22 +6,21 @@ export const useAuthorStore = defineStore('author', () => {
   // state
   const authors = ref([]);
   const loading = ref(false);
-  const errorMessage = ref(null);
 
   // actions
   async function fetchAuthors() {
     loading.value = true;
-    errorMessage.value = null;
     try {
       const res = await api.get('/authors');
-      authors.value = res.data;
+      authors.value = res.data.data;
+      return res.data;
     } catch (err) {
       console.error(err.message);
-      errorMessage.value = 'Không thể kết nối đến server. Vui lòng thử lại sau';
+      throw err;
     } finally {
       loading.value = false;
     }
   }
 
-  return { authors, loading, errorMessage, fetchAuthors };
+  return { authors, loading, fetchAuthors };
 });

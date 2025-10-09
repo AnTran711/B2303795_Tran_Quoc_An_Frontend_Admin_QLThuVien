@@ -1,21 +1,28 @@
 <script setup>
-  import { computed, ref, onMounted, reactive } from 'vue';
+  import { computed, ref, onMounted, watch } from 'vue';
   import { useBookStore } from '@/stores/useBookStore';
   import { useAuthorStore } from '@/stores/useAuthorStore';
   import { usePublisherStore } from '@/stores/usePublisherStore';
   import FormAddOrUpdateBook from '@/components/FormAddOrUpdateBook.vue';
-  import Toolbar from '@/components/Toolbar.vue';
   import Pagination from '@/components/Pagination.vue';
   import Loading from '@/components/Loading.vue';
+  import { toast } from 'vue3-toastify';
 
   const bookStore = useBookStore();
   const authorStore = useAuthorStore();
   const publisherStore = usePublisherStore();
-  onMounted(() => {
-    bookStore.fetchBooks();
-    authorStore.fetchAuthors();
-    publisherStore.fetchPublishers();
+  onMounted(async () => {
+    try {
+      await bookStore.fetchBooks();
+      await authorStore.fetchAuthors();
+      await publisherStore.fetchPublishers();
+    } catch (err) {
+      toast.error(err.response.data.message);
+      // toast.error('Lấy dữ liệu thất bại');
+    }
   });
+
+  const selectedBookId = ref(null);
 
   // paging
   const bookInPage = 5;
@@ -26,9 +33,13 @@
     return bookStore.books.slice(start, start + bookInPage);
   });
 
+  // filter toolbar
+  const itemsFilter = ['Tất cả', 'Còn sách', 'Hết sách'];
+  const selectedFilter = ref('Tất cả');
+
+  
   // Delete book -------------------
   const showDeleteConfirm = ref(false);
-  const selectedBookId = ref(null);
 
   // Open delete book confirm function
   function openDeleteConfirm(id) {
@@ -37,11 +48,16 @@
   }
 
   // Delete comfirm function
-  function deleteConfirm() {
+  async function deleteConfirm() {
     if(selectedBookId.value) {
-      bookStore.deleteBook(selectedBookId.value);
-      selectedBookId.value = null;
-      showDeleteConfirm.value = false;
+      try {
+        const res = await bookStore.deleteBook(selectedBookId.value);
+        toast.success(res.message);
+        selectedBookId.value = null;
+        showDeleteConfirm.value = false;
+      } catch (err) {
+        toast.error(err.response.data.message);
+      }
     }
   }
   
@@ -54,46 +70,29 @@
   // show form add/update book ----------------------------
   const showForm = ref(false);
 
-  // const newBook = reactive({
-  //   MASACH: null,
-  //   TENSACH: null,
-  //   ANHBIA: null,
-  //   DONGIA: null,
-  //   SOQUYEN: null,
-  //   NAMXUATBAN: null,
-  //   MATACGIA: null,
-  //   MANXB: null
-  // });
+  const isEditing = ref(false);
 
-  // function handleSubmit() {
-  //   const formData = new FormData();
-  //   formData.append('MASACH', newBook.MASACH);
-  //   formData.append('TENSACH', newBook.TENSACH);
-  //   formData.append('DONGIA', newBook.DONGIA);
-  //   formData.append('SOQUYEN', newBook.SOQUYEN);
-  //   formData.append('NAMXUATBAN', newBook.NAMXUATBAN);
-  //   formData.append('MATACGIA', newBook.MATACGIA);
-  //   formData.append('MANXB', newBook.MANXB);
+  // Hàm hiển thị form sửa sách
+  function showUpdateForm(id) {
+    isEditing.value = true;
+    showForm.value = true;
+    selectedBookId.value = id;
+  }
 
-  //   if (newBook.ANHBIA && newBook.ANHBIA instanceof File) {
-  //     formData.append('ANHBIA', newBook.ANHBIA);
-  //   } else if (Array.isArray(newBook.ANHBIA) && newBook.ANHBIA.length > 0) {
-  //     formData.append('ANHBIA', newBook.ANHBIA[0]);
-  //   }
-
-  //   bookStore.addBook(formData);
-
-  //   showForm.value = false;
-  //   Object.keys(newBook).forEach(key => newBook[key] = null);
-  // }
+  // Theo dõi sự thay đổi của biến showForm
+  watch(() => showForm.value, (newValueShowForm) => {
+    if(newValueShowForm === false) {
+      isEditing.value = false;
+      selectedBookId.value = null;
+    }
+  })
 
 </script>
 
 <template>
   <div class="pa-4">
     <!-- Toolbar -->
-    <Toolbar v-model="showForm"></Toolbar>
-    <!-- <v-row class="pa-4 bg-white rounded elevation-1 align-center" no-gutters >
+    <v-row class="pa-4 bg-white rounded elevation-1 align-center" no-gutters >
       <v-col class="d-flex align-center" cols="4">
         <v-text-field
           class="mr-2"
@@ -127,7 +126,7 @@
           Thêm sách
         </v-btn>
       </v-col>
-    </v-row> -->
+    </v-row>
 
     <!-- Table -->
     <v-table
@@ -187,7 +186,7 @@
               {{ book.SACHCONLAI }}
             </v-chip>
           </td>
-          <td>{{ book.MANXB }}</td>
+          <td>{{ publisherStore.publishers.find(p => p.MANXB === book.MANXB)?.TENNXB }}</td>
           <td class="text-center">
             <v-btn
               icon
@@ -201,6 +200,7 @@
               icon
               variant="text"
               color="primary"
+              @click="showUpdateForm(book.MASACH)"
             >
               <v-icon>mdi-file-document-edit-outline</v-icon>
             </v-btn>
@@ -223,7 +223,7 @@
     >
       <v-card>
         <v-card-title>
-          Xác nhận xóa sách vĩnh viễn
+          Xác nhận xóa sách
         </v-card-title>
         <v-card-text>
           Hành động này sẽ không thể khôi phục, bạn có chắc chắn muốn xóa!!!
@@ -243,120 +243,18 @@
 
     <!-- Pagination -->
     <Pagination v-model="currentPage" :book-in-page="bookInPage"></Pagination>
-    <!-- <div
-      v-show="bookStore.books.length ? true : false"
-      class="text-center mt-3"
-    >
-      <v-pagination
-        v-model="currentPage"
-        active-color="primary"
-        :length="totalPage"
-        :total-visible="7"
-      ></v-pagination>
-    </div> -->
 
     <!-- Loading -->
     <Loading v-model="bookStore.loading"></Loading>
-    <!-- <v-overlay
-      v-model="bookStore.loading"
-      persistent
-      class="align-center justify-center"
-    >
-      <v-progress-circular indeterminate size="64" color="primary" />
-    </v-overlay> -->
-  
-    <!-- Message error -->
-    <!-- <v-snackbar
-      v-model="bookStore.errorMessage"
-      color="error"
-      location="top"
-    >
-      {{ bookStore.errorMessage }}
-  
-      <template v-slot:actions>
-        <v-btn
-          color="white"
-          variant="text"
-          @click="bookStore.errorMessage = null"
-        >
-          Đóng
-        </v-btn>
-      </template>
-    </v-snackbar> -->
-
-    <!-- Message successfully -->
-    <!-- <v-snackbar
-      v-model="bookStore.showSuccess"
-      color="success"
-      location="top"
-      timeout="1000"
-      @update:model-value="val => { if(!val) bookStore.successMessage = null}"
-    >
-      {{ bookStore.successMessage }}
-
-      <template v-slot:actions>
-        <v-btn
-          color="white"
-          variant="text"
-          @click="bookStore.showSuccess = false"
-        >
-          Đóng
-        </v-btn>
-      </template>
-    </v-snackbar> -->
   </div>
 
   <!-- Form thêm/sửa sách -->
-  <FormAddOrUpdateBook v-model="showForm"></FormAddOrUpdateBook>
-  <!-- <v-overlay
+  <FormAddOrUpdateBook
     v-model="showForm"
-    class="align-center justify-center"
-  >
-    <v-card width="500" max-height="80vh" class="pa-4">
-      <v-card-title>Thêm sách</v-card-title>
-      <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh;">
-        <v-text-field label="Mã sách" clearable variant="outlined" v-model="newBook.MASACH" />
-        <v-text-field label="Tên sách" clearable variant="outlined" v-model="newBook.TENSACH" />
-        <v-file-input
-          v-model="newBook.ANHBIA"
-          accept="image/*"
-          prepend-icon=""
-          prepend-inner-icon="mdi-image"
-          label="Ảnh bìa"
-          variant="outlined"
-        ></v-file-input>
-        <v-text-field label="Đơn giá" clearable variant="outlined" v-model="newBook.DONGIA" />
-        <v-text-field
-          label="Số quyển"
-          type="number"
-          variant="outlined"
-          v-model="newBook.SOQUYEN"
-        />
-        <v-text-field label="Năm xuất bản" clearable variant="outlined" v-model="newBook.NAMXUATBAN" />
-        <v-select
-          v-model="newBook.MATACGIA"
-          label="Tác giả"
-          :items="authorStore.authors"
-          item-title="HOTENTACGIA"
-          item-value="MATACGIA"
-          variant="outlined"
-        ></v-select>
-        <v-select
-          v-model="newBook.MANXB"
-          label="Nhà xuất bản"
-          :items="publisherStore.publishers"
-          item-title="TENNXB"
-          item-value="MANXB"
-          variant="outlined"
-        ></v-select>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-spacer />
-        <v-btn color="primary" @click="handleSubmit">Lưu</v-btn>
-        <v-btn variant="text" @click="showForm = false">Đóng</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-overlay> -->
+    :is-editing="isEditing"
+    :book-id="selectedBookId"
+  />
+  
 </template>
 
 <style scoped>

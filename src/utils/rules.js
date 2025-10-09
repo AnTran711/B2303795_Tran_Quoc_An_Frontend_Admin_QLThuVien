@@ -16,7 +16,7 @@ export const rules = {
 
   // Số hợp lệ
   number: value =>
-    (!isNaN(value) && value !== '') || 'Phải là số',
+    !isNaN(value) || 'Trường này phải là số',
 
   // Kiểm tra số lớn hơn 0
   positiveNumber: value =>
@@ -24,5 +24,5 @@ export const rules = {
 
   // Mật khẩu trùng khớp (xác nhận mật khẩu)
   confirm: compareValue => value =>
-    value === compareValue || 'Mật khẩu không trùng khớp'
+    value === compareValue || 'Mật khẩu không trùng khớp',
 };

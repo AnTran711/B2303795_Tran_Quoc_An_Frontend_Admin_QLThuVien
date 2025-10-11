@@ -10,6 +10,7 @@
       <v-list-item prepend-icon="mdi-view-dashboard" title="Dashboard" />
       <v-list-item to="/quan-ly-sach" prepend-icon="mdi-bookshelf" title="Quản lý sách" />
       <v-list-item prepend-icon="mdi-book-clock" title="Quản lý mượn sách" />
+      <v-list-item to="/nha-xuat-ban" prepend-icon="mdi-printer" title="Nhà xuất bản" />
     </v-list>
   </v-navigation-drawer>
 </template>

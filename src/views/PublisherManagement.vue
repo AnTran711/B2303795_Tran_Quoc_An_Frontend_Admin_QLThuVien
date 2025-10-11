@@ -1,16 +1,14 @@
 <script setup>
   import { computed, ref, watch } from 'vue';
-  import { useBookStore } from '@/stores/useBookStore';
   import { usePublisherStore } from '@/stores/usePublisherStore';
-  import FormAddOrUpdateBook from '@/components/FormAddOrUpdateBook.vue';
   import Pagination from '@/components/Pagination.vue';
+  import FormAddOrUpdatePublisher from '@/components/FormAddOrUpdatePublisher.vue';
   import { toast } from 'vue3-toastify';
 
-  const bookStore = useBookStore();
   const publisherStore = usePublisherStore();
 
-  // Id cuốn sách được chọn để sửa hoặc xóa
-  const selectedBookId = ref(null);
+  // Id nhà xuất bản được chọn để sửa hoặc xóa
+  const selectedPublisherId = ref(null);
 
   // show form add/update book ----------------------------
   const showForm = ref(false);
@@ -21,98 +19,88 @@
   function showUpdateForm(id) {
     isEditing.value = true;
     showForm.value = true;
-    selectedBookId.value = id;
+    selectedPublisherId.value = id;
   }
 
   // Theo dõi sự thay đổi của biến showForm
   watch(() => showForm.value, (newValueShowForm) => {
     if(!newValueShowForm) {
       isEditing.value = false;
-      selectedBookId.value = null;
+      selectedPublisherId.value = null;
     }
   })
 
-  // Tìm kiếm + lọc
+  // Tìm kiếm
   const searchQuery = ref('');
-  const itemsFilter = ['Tất cả', 'Còn sách', 'Hết sách'];
-  const selectedFilter = ref('Tất cả');
 
   // Sắp xếp
-  const itemsSort = ['Mã sách'];
-  const selectedSortField = ref('Mã sách');
+  const itemsSort = ['Mã nhà xuất bản'];
+  const selectedSortField = ref('Mã nhà xuất bản');
   const typeSort = ref(true);
 
   // paging
-  const bookInPage = 5;
+  const publisherInPage = 7;
   let currentPage = ref(1);
 
-  const filterBooks = computed(() => {
-    let books = bookStore.books;
+  const filterPublishers = computed(() => {
+    let publishers = publisherStore.publishers;
 
     // Sắp xếp
     switch (selectedSortField.value) {
-      case 'Mã sách':
-        books.sort((a, b) => {
-          const numA = parseInt(a.MASACH.slice(1));
-          const numB = parseInt(b.MASACH.slice(1));
+      case 'Mã nhà xuất bản':
+        publishers.sort((a, b) => {
+          const numA = parseInt(a.MANXB.slice(1));
+          const numB = parseInt(b.MANXB.slice(1));
           return typeSort.value ? (numA - numB) : (numB - numA);
         })
         break;
       default:
     }
 
-    // Lọc theo trạng thái
-    if (selectedFilter.value === 'Còn sách') {
-      books = books.filter(b => b.SACHCONLAI > 0);
-    } else if (selectedFilter.value === 'Hết sách') {
-      books = books.filter(b => b.SACHCONLAI === 0);
-    }
-
     // Tìm kiếm theo tên
     if (searchQuery.value?.trim()) {
       const q = searchQuery.value.trim().toLowerCase();
-      books = books.filter(b => b.TENSACH.toLowerCase().includes(q));
+      publishers = publishers.filter(p => p.TENNXB.toLowerCase().includes(q));
     }
 
-    return books;
+    return publishers;
   });
 
   // Tính tổng số trang
-  const totalPage = computed(() => Math.ceil(filterBooks.value.length / bookInPage));
+  const totalPage = computed(() => Math.ceil(filterPublishers.value.length / publisherInPage));
 
-  const showBooks = computed(() => {
+  const showPublishers = computed(() => {
     // Đảm bảo currentPage không lớn hơn totalPage
     if (currentPage.value > totalPage.value && totalPage.value > 0) {
       currentPage.value = totalPage.value;
     }
-    const start = bookInPage * (currentPage.value - 1);
+    const start = publisherInPage * (currentPage.value - 1);
 
-    return filterBooks.value.slice(start, start + bookInPage);
+    return filterPublishers.value.slice(start, start + publisherInPage);
   })
 
-
-  // Delete book -------------------
+  // Xóa nhà xuất bản -------------------
 
   // Biến hiển thị thông báo xác nhận xóa
   const showDeleteConfirm = ref(false);
 
-  // Open delete book confirm function
+  // Open delete publisher confirm function
   function openDeleteConfirm(id) {
-    selectedBookId.value = id;
+    selectedPublisherId.value = id;
     showDeleteConfirm.value = true;
   }
 
   // Delete comfirm function
   async function deleteConfirm() {
-    if(selectedBookId.value) {
-      const res = await bookStore.deleteBook(selectedBookId.value);
+    if(selectedPublisherId.value) {
+      const res = await publisherStore.deletePublisher(selectedPublisherId.value);
       toast.success(res.message);
-      selectedBookId.value = null;
+      selectedPublisherId.value = null;
       showDeleteConfirm.value = false;
 
       // Nếu xóa hết phần tử của trang cuối thì lùi về 1 trang
-      const start = bookInPage * (currentPage.value - 1);
-      if (start >= filterBooks.value.length && currentPage.value > 1) {
+      const start = publisherInPage * (currentPage.value - 1);
+      if (start >= filterPublishers.value.length && currentPage.value > 1) {
         currentPage.value--;
       }
     }
@@ -120,7 +108,7 @@
   
   // Cancel delete function
   function deleteCancel() {
-    selectedBookId.value = null;
+    selectedPublisherId.value = null;
     showDeleteConfirm.value = false;
   }
 
@@ -134,7 +122,7 @@
         <v-text-field
           v-model="searchQuery"
           class="mr-2"
-          label="Tìm kiếm sách"
+          label="Tìm kiếm nhà xuất bản"
           variant="outlined"
           hide-details
           density="compact"
@@ -142,7 +130,7 @@
           prepend-inner-icon="mdi-magnify"
         />
       </v-col>
-      <v-col cols="2" class="d-flex flex-row align-center">
+      <v-col cols="3" class="d-flex flex-row align-center">
         <v-select
           label="Sắp xếp theo"
           :items="itemsSort"
@@ -168,79 +156,44 @@
           <v-icon>mdi-sort-descending</v-icon>
         </v-btn>
       </v-col>
-      <v-col cols="3"></v-col>
-      <v-col cols="2">
-        <v-select
-          label="Trạng thái"
-          :items="itemsFilter"
-          v-model="selectedFilter"
-          hide-details
-          variant="outlined"
-          density="compact"
-        ></v-select>
-      </v-col>
+      <v-col cols="4"></v-col>
       <v-col cols="2" class="text-right">
         <v-btn
           color="primary"
           @click="showForm = true"
         >
           <v-icon>mdi-plus</v-icon>
-          Thêm sách
+          Thêm nhà xuất bản
         </v-btn>
       </v-col>
     </v-row>
 
     <!-- Table -->
     <v-table
-      style="height: 430px;"
+      style="height: 420px;"
       class="mt-2 rounded elevation-1"
       striped="even"
-      v-show="bookStore.books.length ? true : false"
+      v-show="publisherStore.publishers.length ? true : false"
     >
       <thead class="bg-primary">
         <tr>
-          <th class="text-left">Mã sách</th>
-          <th class="text-center">Ảnh bìa</th>
-          <th class="text-left">Tên sách</th>
-          <th class="text-left">Đơn giá</th>
-          <th class="text-center">Tổng số lượng</th>
-          <th class="text-center">Còn lại</th>
-          <th class="text-left">Tác giả</th>
-          <th class="text-left">Nhà xuất bản</th>
+          <th class="text-left">Mã nhà xuất bản</th>
+          <th class="text-left">Tên nhà xuất bản</th>
+          <th class="text-left">Địa chỉ</th>
           <th class="text-center">Hành động</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="book in showBooks" :key="book.MASACH">
-          <td>{{ book.MASACH }}</td>
-          <td>
-            <v-img
-              class="ma-1 rounded"
-              :height="66"
-              cover
-              :src="book.ANHBIA"
-            ></v-img>
-          </td>
-          <td style="max-width: 400px; overflow: hidden;">{{ book.TENSACH }}</td>
-          <td>{{ book.DONGIA }}</td>
-          <td class="text-center">
-            <v-chip color="primary" variant="flat">
-              {{ book.SOQUYEN }}
-            </v-chip>
-          </td>
-          <td class="text-center">
-            <v-chip :color="book.SACHCONLAI > 0 ? 'success' : 'error'" variant="flat">
-              {{ book.SACHCONLAI }}
-            </v-chip>
-          </td>
-          <td>{{ book.TENTACGIA }}</td>
-          <td>{{ publisherStore.publishers.find(p => p.MANXB === book.MANXB)?.TENNXB }}</td>
+        <tr v-for="publisher in showPublishers" :key="publisher.MANXB">
+          <td>{{ publisher.MANXB }}</td>
+          <td style="max-width: 400px; overflow: hidden;">{{ publisher.TENNXB }}</td>
+          <td>{{ publisher.DIACHI }}</td>
           <td class="text-center">
             <v-btn
               icon
               variant="text"
               color="error"
-              @click="openDeleteConfirm(book.MASACH)"
+              @click="openDeleteConfirm(publisher.MANXB)"
             >
               <v-icon>mdi-delete</v-icon>
             </v-btn>
@@ -248,7 +201,7 @@
               icon
               variant="text"
               color="primary"
-              @click="showUpdateForm(book.MASACH)"
+              @click="showUpdateForm(publisher.MANXB)"
             >
               <v-icon>mdi-file-document-edit-outline</v-icon>
             </v-btn>
@@ -256,12 +209,11 @@
         </tr>
 
         <!-- Hiển thị khi không tìm thấy sách phù hợp -->
-        <tr v-show="!showBooks.length">
-          <td colspan="8" class="text-center">Không tìm thấy sách phù hợp</td>
+        <tr v-show="!showPublishers.length">
+          <td colspan="3" class="text-center">Không tìm thấy nhà xuất bản phù hợp</td>
         </tr>
       </tbody>
     </v-table>
-    
 
     <!-- Delete confirm -->
     <v-overlay
@@ -270,7 +222,7 @@
       @update:model-value="(val) => { if(!val) deleteCancel() }"
     >
       <v-card>
-        <v-card-title>Xác nhận xóa sách</v-card-title>
+        <v-card-title>Xác nhận xóa nhà xuất bản</v-card-title>
         <v-card-text>
           Hành động này sẽ không thể khôi phục, bạn có chắc chắn muốn xóa không?
         </v-card-text>
@@ -293,10 +245,9 @@
   </div>
 
   <!-- Form thêm/sửa sách -->
-  <FormAddOrUpdateBook
+  <FormAddOrUpdatePublisher
     v-model="showForm"
     :is-editing="isEditing"
-    :book-id="selectedBookId"
+    :publisher-id="selectedPublisherId"
   />
-  
 </template>

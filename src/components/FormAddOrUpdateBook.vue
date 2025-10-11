@@ -1,13 +1,11 @@
 <script setup>
   import { useBookStore } from '@/stores/useBookStore';
-  import { useAuthorStore } from '@/stores/useAuthorStore';
   import { usePublisherStore } from '@/stores/usePublisherStore';
   import { reactive, ref, watch } from 'vue';
   import { rules } from '@/utils/rules';
   import { toast } from 'vue3-toastify';
 
   const bookStore = useBookStore();
-  const authorStore = useAuthorStore();
   const publisherStore = usePublisherStore();
 
   const modelValue = defineModel();
@@ -22,14 +20,18 @@
     MASACH: null,
     TENSACH: null,
     ANHBIA: null,
+    MOTA: null,
     DONGIA: null,
     SOQUYEN: null,
     NAMXUATBAN: null,
-    MATACGIA: null,
+    TENTACGIA: null,
     MANXB: null
   });
 
+  // Instance của form
   const formRef = ref(null);
+
+  // Biến kiểm tra form hợp lệ
   const isFormValid = ref(false);
 
   // Các rule
@@ -41,7 +43,7 @@
         b => b.MASACH.trim().toLowerCase() === v.trim().toLowerCase()
       );
       return exist ? 'Mã sách này đã tồn tại' : true;
-    },
+    }
   }
 
   // Theo dõi sự thay đổi của biến isEditing
@@ -82,17 +84,13 @@
       }
     });
 
-    try {
-      let res;
-      if(props.isEditing) {
-        res = await bookStore.updateBook(formData);
-      } else {
-        res = await bookStore.addBook(formData);
-      }
-      toast.success(res.message);
-    } catch (err) {
-      toast.error(err.response.data.message);
+    let res;
+    if(props.isEditing) {
+      res = await bookStore.updateBook(formData);
+    } else {
+      res = await bookStore.addBook(formData);
     }
+    toast.success(res.message);
 
     modelValue.value = false;
     Object.keys(book).forEach(key => book[key] = null);
@@ -108,7 +106,7 @@
     <v-card width="500" max-height="80vh" class="pa-4">
       <v-card-title>{{ props.isEditing ? 'Sửa sách' : 'Thêm sách' }}</v-card-title>
       <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh;">
-        <v-form ref="formRef" v-model="isFormValid">
+        <v-form ref="formRef" v-model="isFormValid" @keyup.enter="handleSubmit">
           <v-text-field
             label="Mã sách"
             variant="outlined"
@@ -135,6 +133,12 @@
             density="comfortable"
             class="mt-2"
           ></v-file-input>
+          <v-textarea
+            label="Mô tả sách"
+            variant="outlined"
+            v-model="book.MOTA"
+            class="mt-2"
+          ></v-textarea>
           <v-text-field
             label="Đơn giá"
             variant="outlined"
@@ -160,16 +164,13 @@
             density="comfortable"
             class="mt-2"
           />
-          <v-select
-            v-model="book.MATACGIA"
-            label="Tác giả"
-            :items="authorStore.authors"
-            item-title="HOTENTACGIA"
-            item-value="MATACGIA"
+          <v-text-field
+            label="Tên tác giả"
             variant="outlined"
+            v-model="book.TENTACGIA"
             density="comfortable"
             class="mt-2"
-          ></v-select>
+          />
           <v-select
             v-model="book.MANXB"
             label="Nhà xuất bản"

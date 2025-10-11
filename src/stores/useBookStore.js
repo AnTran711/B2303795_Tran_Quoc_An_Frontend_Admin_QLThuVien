@@ -9,65 +9,33 @@ export const useBookStore = defineStore('book', () => {
 
   //actions
   async function fetchBooks() {
-    loading.value = true;
-    try {
-      const res = await api.get('/books');
-      books.value = res.data.data;
-      return res.data;
-    } catch (err) {
-      console.error(err);
-      throw err;
-    } finally {
-      loading.value = false;
-    }
+    const res = await api.get('/books');
+    books.value = res.data.data;
+    return res.data;
   }
 
   async function addBook(book) {
-    loading.value = true;
-    try {
-      const res = await api.post('/books', book, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      books.value.push(res.data.data);
-      return res.data;
-    } catch (err) {
-      console.error(err.message);
-      throw err;
-    } finally {
-      loading.value = false;
-    }
+    const res = await api.post('/books', book, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    books.value.push(res.data.data);
+    return res.data;
   }
 
   async function updateBook(book) {
-    loading.value = true;
-    try {
-      const res = await api.put(`/books/${book.get('MASACH')}`, book, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      books.value = books.value.map(
-        b => b.MASACH === res.data.data.MASACH ? res.data.data : b
-      );
-      return res.data;
-    } catch (err) {
-      console.error(err.message);
-      throw err;
-    } finally {
-      loading.value = false;
-    }
+    const res = await api.put(`/books/${book.get('MASACH')}`, book, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    books.value = books.value.map(
+      b => b.MASACH === res.data.data.MASACH ? res.data.data : b
+    );
+    return res.data;
   }
 
   async function deleteBook(id) {
-    loading.value = true;
-    try {
-      const res = await api.delete(`/books/${id}`);
-      books.value = books.value.filter(book => book.MASACH !== id);
-      return res.data;
-    } catch (err) {
-      console.error(err.message);
-      throw err;
-    } finally {
-      loading.value = false;
-    }
+    const res = await api.delete(`/books/${id}`);
+    books.value = books.value.filter(book => book.MASACH !== id);
+    return res.data;
   }
 
   return { books, loading, fetchBooks, addBook, updateBook, deleteBook };

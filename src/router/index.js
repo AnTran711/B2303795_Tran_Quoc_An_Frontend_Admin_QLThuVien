@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import BookManagement from '@/views/BookManagement.vue';
 import PublisherManagement from '@/views/PublisherManagement.vue';
+import NotFound from '@/views/NotFound.vue';
 
 const routes = [
   {
@@ -22,7 +23,8 @@ const routes = [
         component: PublisherManagement
       }
     ]
-  }
+  },
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound }
 ]
 
 const router = createRouter({

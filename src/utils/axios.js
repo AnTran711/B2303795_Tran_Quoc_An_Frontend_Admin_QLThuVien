@@ -8,6 +8,9 @@ const api = axios.create({
   timeout: 5000
 });
 
+// Axios tự gửi cookie kèm theo request
+api.defaults.withCredentials = true;
+
 // có thể set interceptors ở đây nếu cần token
 // api.interceptors.request.use(config => {
 //   config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`
@@ -16,10 +19,12 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
+    // set trạng thái loading
     const bookStore = useBookStore();
     const publisherStore = usePublisherStore();
     bookStore.loading = true;
     publisherStore.loading = true;
+
     return config;
   },
   (error) => {
@@ -46,11 +51,12 @@ api.interceptors.response.use(
     bookStore.loading = false;
     publisherStore.loading = false;
 
-    let errorMessage = error?.message
+    let errorMessage = error?.message;
     if (error.response?.data?.message) {
       errorMessage = error.response.data.message;
     }
     
+    // Nếu không phải lỗi 410 (hết token) thì toast message
     if (error.response?.status !== 410) {
       toast.error(errorMessage);
     }

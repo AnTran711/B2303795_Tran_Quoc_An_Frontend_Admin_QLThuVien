@@ -15,7 +15,6 @@
   });
 
   const publisher = reactive({
-    MANXB: null,
     TENNXB: null,
     DIACHI: null
   });
@@ -27,16 +26,16 @@
   const isFormValid = ref(false);
 
   // Các rule
-  const localRules = {
-    // Rule trùng mã nhà xuất bản
-    uniqueMANXB: v => {
-      if (!v) return true;
-      const exist = publisherStore.publishers.some(
-        p => p.MANXB.trim().toLowerCase() === v.trim().toLowerCase()
-      );
-      return exist ? 'Mã nhà xuất bản này đã tồn tại' : true;
-    }
-  }
+  // const localRules = {
+  //   // Rule trùng mã nhà xuất bản
+  //   uniqueMANXB: v => {
+  //     if (!v) return true;
+  //     const exist = publisherStore.publishers.some(
+  //       p => p.MANXB.trim().toLowerCase() === v.trim().toLowerCase()
+  //     );
+  //     return exist ? 'Mã nhà xuất bản này đã tồn tại' : true;
+  //   }
+  // }
 
   // Theo dõi sự thay đổi của biến isEditing
   watch(() => props.isEditing, (isEditing) => {
@@ -74,7 +73,10 @@
     }
     toast.success(res.message);
 
+    // Tắt form
     modelValue.value = false;
+
+    // Reset dữ liệu trong object publisher
     Object.keys(publisher).forEach(key => publisher[key] = null);
   }
 
@@ -90,12 +92,12 @@
       <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh;">
         <v-form ref="formRef" v-model="isFormValid" @keyup.enter="handleSubmit">
           <v-text-field
+            v-show="props.isEditing"
             label="Mã nhà xuất bản"
             variant="outlined"
-            v-model="publisher.MANXB"
-            :disabled="props.isEditing ? true : false"
+            v-model="props.publisherId"
+            disabled
             density="comfortable"
-            :rules="props.isEditing ? [] : [rules.required, localRules.uniqueMANXB]"
           />
           <v-text-field
             label="Tên nhà xuất bản"
@@ -104,6 +106,7 @@
             :rules="[rules.required]"
             density="comfortable"
             class="mt-2"
+            clearable
           />
           <v-text-field
             label="Địa chỉ"
@@ -111,13 +114,14 @@
             v-model="publisher.DIACHI"
             density="comfortable"
             class="mt-2"
+            clearable
           />
         </v-form>
       </v-card-text>
       <v-card-actions class="justify-end">
         <v-spacer />
-        <v-btn color="primary" @click="handleSubmit">Lưu</v-btn>
-        <v-btn variant="text" @click="modelValue = false">Đóng</v-btn>
+        <v-btn variant="elevated" color="primary" @click="handleSubmit">Lưu</v-btn>
+        <v-btn variant="tonal" @click="modelValue = false">Đóng</v-btn>
       </v-card-actions>
     </v-card>
   </v-overlay>

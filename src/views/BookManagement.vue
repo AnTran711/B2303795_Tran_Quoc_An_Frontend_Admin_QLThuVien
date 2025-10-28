@@ -215,11 +215,20 @@
           <td>{{ book.MASACH }}</td>
           <td>
             <v-img
-              class="ma-1 rounded"
+              class="ma-1 rounded elevation-1"
               :height="66"
-              cover
-              :src="book.ANHBIA"
-            ></v-img>
+              aspect-ratio="2/3"
+              :src="book.ANHBIA || '/imgs/no-cover.png'"
+            >
+              <template v-slot:error>
+                <v-img
+                  class="ma-1 rounded"
+                  height="66"
+                  aspect-ratio="2/3"
+                  src="/imgs/no-cover.png"
+                ></v-img>
+              </template>
+            </v-img>
           </td>
           <td style="max-width: 400px; overflow: hidden;">{{ book.TENSACH }}</td>
           <td>{{ book.DONGIA }}</td>
@@ -276,13 +285,13 @@
         </v-card-text>
         <v-card-actions class="justify-end">
           <v-btn
-            variant="text"
+            variant="elevated"
             color="error"
             @click="deleteConfirm"
           >
             Xóa
           </v-btn>
-          <v-btn variant="text" @click="deleteCancel">Hủy</v-btn>
+          <v-btn variant="tonal" @click="deleteCancel">Hủy</v-btn>
         </v-card-actions>
       </v-card>
     </v-overlay>

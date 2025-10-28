@@ -17,7 +17,6 @@
   });
 
   const book = reactive({
-    MASACH: null,
     TENSACH: null,
     ANHBIA: null,
     MOTA: null,
@@ -35,16 +34,16 @@
   const isFormValid = ref(false);
 
   // Các rule
-  const localRules = {
-    // Rule trùng mã sách
-    uniqueMASACH: v => {
-      if (!v) return true;
-      const exist = bookStore.books.some(
-        b => b.MASACH.trim().toLowerCase() === v.trim().toLowerCase()
-      );
-      return exist ? 'Mã sách này đã tồn tại' : true;
-    }
-  }
+  // const localRules = {
+  //   // Rule trùng mã sách
+  //   uniqueMASACH: v => {
+  //     if (!v) return true;
+  //     const exist = bookStore.books.some(
+  //       b => b.MASACH.trim().toLowerCase() === v.trim().toLowerCase()
+  //     );
+  //     return exist ? 'Mã sách này đã tồn tại' : true;
+  //   }
+  // }
 
   // Theo dõi sự thay đổi của biến isEditing
   watch(() => props.isEditing, (isEditing) => {
@@ -92,7 +91,10 @@
     }
     toast.success(res.message);
 
+    // Tắt overlay và form thêm/sửa sách
     modelValue.value = false;
+
+    // Đặt lại null cho các field của object book
     Object.keys(book).forEach(key => book[key] = null);
   }
 
@@ -108,12 +110,12 @@
       <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh;">
         <v-form ref="formRef" v-model="isFormValid" @keyup.enter="handleSubmit">
           <v-text-field
+            v-show="props.isEditing"
+            v-model="props.bookId"
             label="Mã sách"
             variant="outlined"
-            v-model="book.MASACH"
-            :disabled="props.isEditing ? true : false"
+            disabled
             density="comfortable"
-            :rules="props.isEditing ? [] : [rules.required, localRules.uniqueMASACH]"
           />
           <v-text-field
             label="Tên sách"
@@ -122,6 +124,7 @@
             :rules="[rules.required]"
             density="comfortable"
             class="mt-2"
+            clearable
           />
           <v-file-input
             v-model="book.ANHBIA"
@@ -138,6 +141,7 @@
             variant="outlined"
             v-model="book.MOTA"
             class="mt-2"
+            clearable
           ></v-textarea>
           <v-text-field
             label="Đơn giá"
@@ -146,6 +150,7 @@
             v-model="book.DONGIA"
             density="comfortable"
             class="mt-2"
+            clearable
           />
           <v-text-field
             label="Số quyển"
@@ -155,6 +160,7 @@
             :rules="[rules.positiveNumber]"
             density="comfortable"
             class="mt-2"
+            clearable
           />
           <v-text-field
             label="Năm xuất bản"
@@ -163,6 +169,7 @@
             v-model="book.NAMXUATBAN"
             density="comfortable"
             class="mt-2"
+            clearable
           />
           <v-text-field
             label="Tên tác giả"
@@ -170,6 +177,7 @@
             v-model="book.TENTACGIA"
             density="comfortable"
             class="mt-2"
+            clearable
           />
           <v-select
             v-model="book.MANXB"
@@ -186,8 +194,8 @@
       </v-card-text>
       <v-card-actions class="justify-end">
         <v-spacer />
-        <v-btn color="primary" @click="handleSubmit">Lưu</v-btn>
-        <v-btn variant="text" @click="modelValue = false">Đóng</v-btn>
+        <v-btn variant="elevated" color="primary" @click="handleSubmit">Lưu</v-btn>
+        <v-btn variant="tonal" @click="modelValue = false">Đóng</v-btn>
       </v-card-actions>
     </v-card>
   </v-overlay>

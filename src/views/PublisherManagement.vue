@@ -228,13 +228,13 @@
         </v-card-text>
         <v-card-actions class="justify-end">
           <v-btn
-            variant="text"
+            variant="elevated"
             color="error"
             @click="deleteConfirm"
           >
             Xóa
           </v-btn>
-          <v-btn variant="text" @click="deleteCancel">Hủy</v-btn>
+          <v-btn variant="tonal" @click="deleteCancel">Hủy</v-btn>
         </v-card-actions>
       </v-card>
     </v-overlay>

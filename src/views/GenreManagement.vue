@@ -1,32 +1,32 @@
 <script setup>
   import { computed, ref, watch } from 'vue';
-  import { usePublisherStore } from '@/stores/usePublisherStore';
+  import { useGenreStore } from '@/stores/useGenreStore';
   import Pagination from '@/components/Pagination.vue';
-  import FormAddOrUpdatePublisher from '@/components/FormAddOrUpdatePublisher.vue';
   import { toast } from 'vue3-toastify';
+  import FormAddOrUpdateGenre from '@/components/FormAddOrUpdateGenre.vue';
 
-  const publisherStore = usePublisherStore();
+  const genreStore = useGenreStore();
 
-  // Id nhà xuất bản được chọn để sửa hoặc xóa
-  const selectedPublisherId = ref(null);
+  // Id thể loại được chọn để sửa hoặc xóa
+  const selectedGenreId = ref(null);
 
-  // show form add/update publisher ----------------------------
+  // show form add/update genre ----------------------------
   const showForm = ref(false);
 
   const isEditing = ref(false);
 
-  // Hàm hiển thị form sửa nhà xuất bản
+  // Hàm hiển thị form sửa thể loại
   function showUpdateForm(id) {
     isEditing.value = true;
     showForm.value = true;
-    selectedPublisherId.value = id;
+    selectedGenreId.value = id;
   }
 
   // Theo dõi sự thay đổi của biến showForm
   watch(() => showForm.value, (newValueShowForm) => {
     if(!newValueShowForm) {
       isEditing.value = false;
-      selectedPublisherId.value = null;
+      selectedGenreId.value = null;
     }
   })
 
@@ -34,23 +34,23 @@
   const searchQuery = ref('');
 
   // Sắp xếp
-  const itemsSort = ['Mã nhà xuất bản'];
-  const selectedSortField = ref('Mã nhà xuất bản');
+  const itemsSort = ['Mã thể loại'];
+  const selectedSortField = ref('Mã thể loại');
   const typeSort = ref(true); // true: là tăng dần, false: là giảm dần
 
   // paging
-  const publisherInPage = 7;
+  const genresInPage = 7;
   let currentPage = ref(1);
 
-  const filterPublishers = computed(() => {
-    let publishers = publisherStore.publishers;
+  const filterGenres = computed(() => {
+    let genres = genreStore.genres;
 
     // Sắp xếp
     switch (selectedSortField.value) {
-      case 'Mã nhà xuất bản':
-        publishers.sort((a, b) => {
-          const numA = parseInt(a.MANXB.slice(3));
-          const numB = parseInt(b.MANXB.slice(3));
+      case 'Mã thể loại':
+        genres.sort((a, b) => {
+          const numA = parseInt(a.MATHELOAI.slice(2));
+          const numB = parseInt(b.MATHELOAI.slice(2));
           return typeSort.value ? (numA - numB) : (numB - numA);
         })
         break;
@@ -60,47 +60,47 @@
     // Tìm kiếm theo tên
     if (searchQuery.value?.trim()) {
       const q = searchQuery.value.trim().toLowerCase();
-      publishers = publishers.filter(p => p.TENNXB.toLowerCase().includes(q));
+      genres = genres.filter(g => g.TENTHELOAI.toLowerCase().includes(q));
     }
 
-    return publishers;
+    return genres;
   });
 
   // Tính tổng số trang
-  const totalPage = computed(() => Math.ceil(filterPublishers.value.length / publisherInPage));
+  const totalPage = computed(() => Math.ceil(filterGenres.value.length / genresInPage));
 
-  const showPublishers = computed(() => {
+  const showGenres = computed(() => {
     // Đảm bảo currentPage không lớn hơn totalPage
     if (currentPage.value > totalPage.value && totalPage.value > 0) {
       currentPage.value = totalPage.value;
     }
-    const start = publisherInPage * (currentPage.value - 1);
+    const start = genresInPage * (currentPage.value - 1);
 
-    return filterPublishers.value.slice(start, start + publisherInPage);
-  })
+    return filterGenres.value.slice(start, start + genresInPage);
+  });
 
   // Xóa nhà xuất bản -------------------
 
   // Biến hiển thị thông báo xác nhận xóa
   const showDeleteConfirm = ref(false);
 
-  // Open delete publisher confirm function
+  // Open delete genre confirm function
   function openDeleteConfirm(id) {
-    selectedPublisherId.value = id;
+    selectedGenreId.value = id;
     showDeleteConfirm.value = true;
   }
 
   // Delete comfirm function
   async function deleteConfirm() {
-    if(selectedPublisherId.value) {
-      const res = await publisherStore.deletePublisher(selectedPublisherId.value);
+    if(selectedGenreId.value) {
+      const res = await genreStore.deleteGenre(selectedGenreId.value);
       toast.success(res.message);
-      selectedPublisherId.value = null;
+      selectedGenreId.value = null;
       showDeleteConfirm.value = false;
 
       // Nếu xóa hết phần tử của trang cuối thì lùi về 1 trang
-      const start = publisherInPage * (currentPage.value - 1);
-      if (start >= filterPublishers.value.length && currentPage.value > 1) {
+      const start = genresInPage * (currentPage.value - 1);
+      if (start >= filterGenres.value.length && currentPage.value > 1) {
         currentPage.value--;
       }
     }
@@ -108,7 +108,7 @@
   
   // Cancel delete function
   function deleteCancel() {
-    selectedPublisherId.value = null;
+    selectedGenreId.value = null;
     showDeleteConfirm.value = false;
   }
 
@@ -122,7 +122,7 @@
         <v-text-field
           v-model="searchQuery"
           class="mr-2"
-          label="Tìm kiếm nhà xuất bản"
+          label="Tìm kiếm thể loại"
           variant="outlined"
           hide-details
           density="compact"
@@ -163,7 +163,7 @@
           @click="showForm = true"
         >
           <v-icon>mdi-plus</v-icon>
-          Thêm nhà xuất bản
+          Thêm thể loại
         </v-btn>
       </v-col>
     </v-row>
@@ -173,27 +173,27 @@
       style="height: 420px;"
       class="mt-2 rounded elevation-1"
       striped="even"
-      v-show="publisherStore.publishers.length ? true : false"
+      v-show="genreStore.genres.length ? true : false"
     >
       <thead class="bg-primary">
         <tr>
-          <th class="text-left">Mã nhà xuất bản</th>
-          <th class="text-left">Tên nhà xuất bản</th>
-          <th class="text-left">Địa chỉ</th>
+          <th class="text-left">Mã thể loại</th>
+          <th class="text-left">Tên thể loại</th>
+          <!-- <th class="text-left">Mô tả</th> -->
           <th class="text-center">Hành động</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="publisher in showPublishers" :key="publisher.MANXB">
-          <td>{{ publisher.MANXB }}</td>
-          <td style="max-width: 400px; overflow: hidden;">{{ publisher.TENNXB }}</td>
-          <td>{{ publisher.DIACHI }}</td>
+        <tr v-for="genre in showGenres" :key="genre.MATHELOAI">
+          <td>{{ genre.MATHELOAI }}</td>
+          <td style="max-width: 400px; overflow: hidden;">{{ genre.TENTHELOAI }}</td>
+          <!-- <td>{{ genre.MOTA }}</td> -->
           <td class="text-center">
             <v-btn
               icon
               variant="text"
               color="error"
-              @click="openDeleteConfirm(publisher.MANXB)"
+              @click="openDeleteConfirm(genre.MATHELOAI)"
             >
               <v-icon>mdi-delete</v-icon>
             </v-btn>
@@ -201,7 +201,7 @@
               icon
               variant="text"
               color="primary"
-              @click="showUpdateForm(publisher.MANXB)"
+              @click="showUpdateForm(genre.MATHELOAI)"
             >
               <v-icon>mdi-file-document-edit-outline</v-icon>
             </v-btn>
@@ -209,8 +209,8 @@
         </tr>
 
         <!-- Hiển thị khi không tìm thấy sách phù hợp -->
-        <tr v-show="!showPublishers.length">
-          <td colspan="3" class="text-center">Không tìm thấy nhà xuất bản phù hợp</td>
+        <tr v-show="!showGenres.length">
+          <td colspan="3" class="text-center">Không tìm thấy thể loại phù hợp</td>
         </tr>
       </tbody>
     </v-table>
@@ -222,7 +222,7 @@
       @update:model-value="(val) => { if(!val) deleteCancel() }"
     >
       <v-card>
-        <v-card-title>Xác nhận xóa nhà xuất bản</v-card-title>
+        <v-card-title>Xác nhận xóa thể loại</v-card-title>
         <v-card-text>
           Hành động này sẽ không thể khôi phục, bạn có chắc chắn muốn xóa không?
         </v-card-text>
@@ -245,9 +245,9 @@
   </div>
 
   <!-- Form thêm/sửa sách -->
-  <FormAddOrUpdatePublisher
+  <FormAddOrUpdateGenre
     v-model="showForm"
     :is-editing="isEditing"
-    :publisher-id="selectedPublisherId"
+    :genre-id="selectedGenreId"
   />
 </template>

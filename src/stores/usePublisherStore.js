@@ -24,8 +24,8 @@ export const usePublisherStore = defineStore('publisher', () => {
   }
 
   // Hàm cập nhật nhà xuất bản
-  async function updatePublisher(publisher) {
-    const res = await api.put(`/publishers/${publisher.MANXB}`, publisher);
+  async function updatePublisher(publisher, publisherId) {
+    const res = await api.put(`/publishers/${publisherId}`, publisher);
     publishers.value = publishers.value.map(
       p => p.MANXB === res.data.data.MANXB ? res.data.data : p
     );

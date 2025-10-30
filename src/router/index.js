@@ -4,6 +4,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import BookManagement from '@/views/BookManagement.vue';
 import PublisherManagement from '@/views/PublisherManagement.vue';
 import NotFound from '@/views/NotFound.vue';
+import GenreManagement from '@/views/GenreManagement.vue';
 
 const routes = [
   {
@@ -21,6 +22,10 @@ const routes = [
       {
         path: 'nha-xuat-ban',
         component: PublisherManagement
+      },
+      {
+        path: 'the-loai',
+        component: GenreManagement
       }
     ]
   },

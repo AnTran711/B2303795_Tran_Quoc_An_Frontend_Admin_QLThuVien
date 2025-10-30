@@ -1,12 +1,14 @@
 <script setup>
   import { useBookStore } from '@/stores/useBookStore';
   import { usePublisherStore } from '@/stores/usePublisherStore';
+  import { useGenreStore } from '@/stores/useGenreStore';
   import { reactive, ref, watch } from 'vue';
   import { rules } from '@/utils/rules';
   import { toast } from 'vue3-toastify';
 
   const bookStore = useBookStore();
   const publisherStore = usePublisherStore();
+  const genreStore = useGenreStore();
 
   const modelValue = defineModel();
 
@@ -17,14 +19,15 @@
   });
 
   const book = reactive({
-    TENSACH: null,
+    TENSACH: '',
     ANHBIA: null,
-    MOTA: null,
-    DONGIA: null,
-    SOQUYEN: null,
-    NAMXUATBAN: null,
-    TENTACGIA: null,
-    MANXB: null
+    MOTA: '',
+    DONGIA: '',
+    SOQUYEN: '',
+    NAMXUATBAN: '',
+    TENTACGIA: '',
+    MANXB: null,
+    THELOAI: []
   });
 
   // Instance của form
@@ -33,20 +36,8 @@
   // Biến kiểm tra form hợp lệ
   const isFormValid = ref(false);
 
-  // Các rule
-  // const localRules = {
-  //   // Rule trùng mã sách
-  //   uniqueMASACH: v => {
-  //     if (!v) return true;
-  //     const exist = bookStore.books.some(
-  //       b => b.MASACH.trim().toLowerCase() === v.trim().toLowerCase()
-  //     );
-  //     return exist ? 'Mã sách này đã tồn tại' : true;
-  //   }
-  // }
-
   // Theo dõi sự thay đổi của biến isEditing
-  watch(() => props.isEditing, (isEditing) => {
+  watch([() => props.isEditing, () => props.bookId], ([isEditing]) => {
     if(isEditing) {
       const currentUpdateBook = bookStore.books.find(b => b.MASACH === props.bookId);
       Object.keys(book).forEach(key => {
@@ -55,7 +46,15 @@
         }
       });
     } else {
-      Object.keys(book).forEach(key => book[key] = null);
+      Object.keys(book).forEach(key => {
+        if (key === 'THELOAI') {
+          book[key] = [];
+        } else if (key === 'ANHBIA' || key === 'MANXB') {
+          book[key] = null;
+        } else {
+          book[key] = '';
+        }
+      });
     }
   });
 
@@ -78,6 +77,8 @@
         } else if (Array.isArray(book[key]) && book[key].length > 0) {
           formData.append(key, book[key][0]);
         }
+      } else if (Array.isArray(book[key])) {
+        book[key].forEach(value => formData.append(`${key}[]`, value));
       } else {
         formData.append(key, book[key]);
       }
@@ -85,7 +86,7 @@
 
     let res;
     if(props.isEditing) {
-      res = await bookStore.updateBook(formData);
+      res = await bookStore.updateBook(formData, props.bookId);
     } else {
       res = await bookStore.addBook(formData);
     }
@@ -94,8 +95,30 @@
     // Tắt overlay và form thêm/sửa sách
     modelValue.value = false;
 
-    // Đặt lại null cho các field của object book
-    Object.keys(book).forEach(key => book[key] = null);
+    // Đặt lại giá trị mặc định cho các field của object book
+    Object.keys(book).forEach(key => {
+      if (key === 'THELOAI') {
+        book[key] = [];
+      } else if (key === 'ANHBIA' || key === 'MANXB') {
+        book[key] = null;
+      } else {
+        book[key] = '';
+      }
+    });
+  }
+
+  // Hàm đóng form
+  const closeForm = () => {
+    modelValue.value = false;
+    Object.keys(book).forEach(key => {
+      if (key === 'THELOAI') {
+        book[key] = [];
+      } else if (key === 'ANHBIA' || key === 'MANXB') {
+        book[key] = null;
+      } else {
+        book[key] = '';
+      }
+    });
   }
 
 </script>
@@ -105,97 +128,119 @@
     v-model="modelValue"
     class="align-center justify-center"
   >
-    <v-card width="500" max-height="80vh" class="pa-4">
-      <v-card-title>{{ props.isEditing ? 'Sửa sách' : 'Thêm sách' }}</v-card-title>
+    <v-card width="800" max-height="80vh" class="pa-4">
+      <v-card-title class="text-center">{{ props.isEditing ? 'Sửa sách' : 'Thêm sách' }}</v-card-title>
       <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh;">
         <v-form ref="formRef" v-model="isFormValid" @keyup.enter="handleSubmit">
-          <v-text-field
-            v-show="props.isEditing"
-            v-model="props.bookId"
-            label="Mã sách"
-            variant="outlined"
-            disabled
-            density="comfortable"
-          />
-          <v-text-field
-            label="Tên sách"
-            variant="outlined"
-            v-model="book.TENSACH"
-            :rules="[rules.required]"
-            density="comfortable"
-            class="mt-2"
-            clearable
-          />
-          <v-file-input
-            v-model="book.ANHBIA"
-            accept="image/*"
-            prepend-icon=""
-            prepend-inner-icon="mdi-image"
-            label="Ảnh bìa"
-            variant="outlined"
-            density="comfortable"
-            class="mt-2"
-          ></v-file-input>
-          <v-textarea
-            label="Mô tả sách"
-            variant="outlined"
-            v-model="book.MOTA"
-            class="mt-2"
-            clearable
-          ></v-textarea>
-          <v-text-field
-            label="Đơn giá"
-            variant="outlined"
-            :rules="[rules.number]"
-            v-model="book.DONGIA"
-            density="comfortable"
-            class="mt-2"
-            clearable
-          />
-          <v-text-field
-            label="Số quyển"
-            type="number"
-            variant="outlined"
-            v-model="book.SOQUYEN"
-            :rules="[rules.positiveNumber]"
-            density="comfortable"
-            class="mt-2"
-            clearable
-          />
-          <v-text-field
-            label="Năm xuất bản"
-            variant="outlined"
-            :rules="[rules.number]"
-            v-model="book.NAMXUATBAN"
-            density="comfortable"
-            class="mt-2"
-            clearable
-          />
-          <v-text-field
-            label="Tên tác giả"
-            variant="outlined"
-            v-model="book.TENTACGIA"
-            density="comfortable"
-            class="mt-2"
-            clearable
-          />
-          <v-select
-            v-model="book.MANXB"
-            label="Nhà xuất bản"
-            :rules="[rules.required]"
-            :items="publisherStore.publishers"
-            item-title="TENNXB"
-            item-value="MANXB"
-            variant="outlined"
-            density="comfortable"
-            class="mt-2"
-          ></v-select>
+          <v-container>
+            <v-row class="d-flex justify-center">
+              <v-col cols="6">
+                <v-text-field
+                  v-show="props.isEditing"
+                  v-model="props.bookId"
+                  label="Mã sách"
+                  variant="outlined"
+                  disabled
+                  density="comfortable"
+                />
+                <v-text-field
+                  label="Tên sách"
+                  variant="outlined"
+                  v-model="book.TENSACH"
+                  :rules="[rules.required]"
+                  density="comfortable"
+                  class="mt-2"
+                  clearable
+                />
+                <v-file-input
+                  v-model="book.ANHBIA"
+                  accept="image/*"
+                  prepend-icon=""
+                  prepend-inner-icon="mdi-image"
+                  label="Ảnh bìa"
+                  variant="outlined"
+                  density="comfortable"
+                  class="mt-2"
+                />
+                <v-textarea
+                  label="Mô tả sách"
+                  variant="outlined"
+                  v-model="book.MOTA"
+                  class="mt-2"
+                  clearable
+                  rows="4"
+                />
+                <v-text-field
+                  label="Đơn giá"
+                  variant="outlined"
+                  :rules="[rules.number]"
+                  v-model="book.DONGIA"
+                  density="comfortable"
+                  class="mt-2"
+                  clearable
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  label="Số quyển"
+                  type="number"
+                  variant="outlined"
+                  v-model="book.SOQUYEN"
+                  :rules="[rules.positiveNumber]"
+                  density="comfortable"
+                  class="mt-2"
+                  clearable
+                />
+                <v-text-field
+                  label="Năm xuất bản"
+                  variant="outlined"
+                  :rules="[rules.number]"
+                  v-model="book.NAMXUATBAN"
+                  density="comfortable"
+                  class="mt-2"
+                  clearable
+                />
+                <v-text-field
+                  label="Tên tác giả"
+                  variant="outlined"
+                  v-model="book.TENTACGIA"
+                  density="comfortable"
+                  class="mt-2"
+                  clearable
+                />
+                <v-select
+                  v-model="book.MANXB"
+                  label="Nhà xuất bản"
+                  :rules="[rules.required]"
+                  :items="publisherStore.publishers"
+                  item-title="TENNXB"
+                  item-value="MANXB"
+                  variant="outlined"
+                  density="comfortable"
+                  class="mt-2"
+                ></v-select>
+                <v-select
+                  v-model="book.THELOAI"
+                  :rules="[rules.required]"
+                  :items="genreStore.genres"
+                  item-title="TENTHELOAI"
+                  item-value="MATHELOAI"
+                  label="Thể loại"
+                  multiple
+                  variant="outlined"
+                  density="comfortable"
+                  class="mt-2"
+                ></v-select>
+              </v-col>
+            </v-row>
+          </v-container>
         </v-form>
       </v-card-text>
       <v-card-actions class="justify-end">
         <v-spacer />
         <v-btn variant="elevated" color="primary" @click="handleSubmit">Lưu</v-btn>
-        <v-btn variant="tonal" @click="modelValue = false">Đóng</v-btn>
+        <v-btn variant="tonal" @click="closeForm">Đóng</v-btn>
       </v-card-actions>
     </v-card>
   </v-overlay>

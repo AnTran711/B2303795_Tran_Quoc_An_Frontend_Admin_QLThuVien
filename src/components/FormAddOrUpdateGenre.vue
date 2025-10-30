@@ -1,22 +1,22 @@
 <script setup>
-  import { usePublisherStore } from '@/stores/usePublisherStore';
+  import { useGenreStore } from '@/stores/useGenreStore';
   import { reactive, ref, watch } from 'vue';
   import { rules } from '@/utils/rules';
   import { toast } from 'vue3-toastify';
 
-  const publisherStore = usePublisherStore();
+  const genreStore = useGenreStore();
 
   const modelValue = defineModel();
 
   // Định nghĩa props
   const props = defineProps({
     isEditing: Boolean,
-    publisherId: String
+    genreId: String
   });
 
-  const publisher = reactive({
-    TENNXB: '',
-    DIACHI: ''
+  const genre = reactive({
+    TENTHELOAI: '',
+    MOTA: ''
   });
 
   // Instance của form
@@ -26,18 +26,18 @@
   const isFormValid = ref(false);
 
   // Theo dõi sự thay đổi của biến isEditing
-  watch([() => props.isEditing, () => props.publisherId], ([isEditing]) => {
+  watch([() => props.isEditing, () => props.genreId], ([isEditing]) => {
     if(isEditing) {
-      const currentUpdatePublisher = publisherStore.publishers.find(p => p.MANXB === props.publisherId);
-      Object.keys(publisher).forEach(key => {
-        publisher[key] = currentUpdatePublisher[key];
+      const currentUpdateGenre = genreStore.genres.find(g => g.MATHELOAI === props.genreId);
+      Object.keys(genre).forEach(key => {
+        genre[key] = currentUpdateGenre[key];
       });
     } else {
-      Object.keys(publisher).forEach(key => publisher[key] = '');
+      Object.keys(genre).forEach(key => genre[key] = '');
     }
   });
 
-  // Hàm gửi dữ liệu nhà xuất bản
+  // Hàm gửi dữ liệu thể loại
   async function handleSubmit() {
     // Kiểm tra dữ liệu có hợp lệ hay không
     const { valid } = await formRef.value.validate();
@@ -49,26 +49,23 @@
 
     let res;
     if(props.isEditing) {
-      res = await publisherStore.updatePublisher(publisher, props.publisherId);
+      res = await genreStore.updateGenre(genre, props.genreId);
     } else {
-      res = await publisherStore.addPublisher(publisher);
+      res = await genreStore.addGenre(genre);
     }
     toast.success(res.message);
 
     // Tắt form
     modelValue.value = false;
 
-    // Reset dữ liệu trong object publisher
-    Object.keys(publisher).forEach(key => publisher[key] = '');
+    // Reset dữ liệu trong object genre
+    Object.keys(genre).forEach(key => genre[key] = '');
   }
 
   // Hàm đóng form
-  const closeForm = () => {
-    // Tắt form
+  const closeFrom = () => {
     modelValue.value = false;
-
-    // Reset dữ liệu trong object publisher
-    Object.keys(publisher).forEach(key => publisher[key] = '');
+    Object.keys(genre).forEach(key => genre[key] = '');
   }
 
 </script>
@@ -79,31 +76,30 @@
     class="align-center justify-center"
   >
     <v-card width="500" max-height="80vh" class="pa-4">
-      <v-card-title>{{ props.isEditing ? 'Sửa nhà xuất bản' : 'Thêm nhà xuất bản' }}</v-card-title>
+      <v-card-title>{{ props.isEditing ? 'Sửa thể loại' : 'Thêm thể loại' }}</v-card-title>
       <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh;">
         <v-form ref="formRef" v-model="isFormValid" @keyup.enter="handleSubmit">
           <v-text-field
             v-show="props.isEditing"
-            label="Mã nhà xuất bản"
+            label="Mã thể loại"
             variant="outlined"
-            v-model="props.publisherId"
+            v-model="props.genreId"
             disabled
             density="comfortable"
           />
           <v-text-field
-            label="Tên nhà xuất bản"
+            label="Tên thể loại"
             variant="outlined"
-            v-model="publisher.TENNXB"
+            v-model="genre.TENTHELOAI"
             :rules="[rules.required]"
             density="comfortable"
             class="mt-2"
             clearable
           />
-          <v-text-field
-            label="Địa chỉ"
+          <v-textarea
+            label="Mô tả thể loại"
             variant="outlined"
-            v-model="publisher.DIACHI"
-            density="comfortable"
+            v-model="genre.MOTA"
             class="mt-2"
             clearable
           />
@@ -112,7 +108,7 @@
       <v-card-actions class="justify-end">
         <v-spacer />
         <v-btn variant="elevated" color="primary" @click="handleSubmit">Lưu</v-btn>
-        <v-btn variant="tonal" @click="closeForm">Đóng</v-btn>
+        <v-btn variant="tonal" @click="closeFrom">Đóng</v-btn>
       </v-card-actions>
     </v-card>
   </v-overlay>

@@ -22,8 +22,8 @@ export const useBookStore = defineStore('book', () => {
     return res.data;
   }
 
-  async function updateBook(book) {
-    const res = await api.put(`/books/${book.get('MASACH')}`, book, {
+  async function updateBook(book, bookId) {
+    const res = await api.put(`/books/${bookId}`, book, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     books.value = books.value.map(

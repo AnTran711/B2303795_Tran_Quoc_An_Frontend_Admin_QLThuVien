@@ -20,7 +20,7 @@
 
   const drawer = ref(true);
 
-  const isLoading = computed(() => bookStore.loading || publisherStore.loading);
+  const isLoading = computed(() => bookStore.loading || publisherStore.loading || genreStore.loading);
 </script>
 
 <template>

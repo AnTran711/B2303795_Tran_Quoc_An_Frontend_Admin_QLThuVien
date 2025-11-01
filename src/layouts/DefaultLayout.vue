@@ -6,21 +6,24 @@
   import { usePublisherStore } from '@/stores/usePublisherStore';
   import { useGenreStore } from '@/stores/useGenreStore';
   import Loading from '@/components/Loading.vue';
+  import { useBorrowRecordStore } from '@/stores/useBorrowRecordStore';
 
   const bookStore = useBookStore();
   const publisherStore = usePublisherStore();
   const genreStore = useGenreStore();
+  const borrowRecordStore = useBorrowRecordStore();
 
   // fetch dữ liệu
   onMounted(async () => {
     await bookStore.fetchBooks();
     await publisherStore.fetchPublishers();
     await genreStore.fetchGenres();
+    await borrowRecordStore.fetchBorrowRecords();
   });
 
   const drawer = ref(true);
 
-  const isLoading = computed(() => bookStore.loading || publisherStore.loading || genreStore.loading);
+  const isLoading = computed(() => bookStore.loading || publisherStore.loading || genreStore.loading || borrowRecordStore.loading);
 </script>
 
 <template>

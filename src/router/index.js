@@ -5,27 +5,32 @@ import BookManagement from '@/views/BookManagement.vue';
 import PublisherManagement from '@/views/PublisherManagement.vue';
 import NotFound from '@/views/NotFound.vue';
 import GenreManagement from '@/views/GenreManagement.vue';
+import BookBorrowingManagement from '@/views/BookBorrowingManagement.vue';
 
 const routes = [
   {
     path: '/',
-    redirect: '/quan-ly-sach'
+    redirect: '/book-management'
   },
   {
     path: '/',
     component: DefaultLayout,
     children: [
       {
-        path: 'quan-ly-sach',
+        path: 'book-management',
         component: BookManagement
       },
       {
-        path: 'nha-xuat-ban',
+        path: 'publisher-management',
         component: PublisherManagement
       },
       {
-        path: 'the-loai',
+        path: 'genre-management',
         component: GenreManagement
+      },
+      {
+        path: 'book-borrowing-management',
+        component: BookBorrowingManagement
       }
     ]
   },

@@ -30,7 +30,16 @@
       isEditing.value = false;
       selectedBookId.value = null;
     }
-  })
+  });
+
+  // Hàm xóa dấu
+  function removeVietnameseTones(str) {
+    return str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D");
+  }
 
   // Tìm kiếm + lọc
   const searchQuery = ref('');
@@ -70,8 +79,8 @@
 
     // Tìm kiếm theo tên
     if (searchQuery.value?.trim()) {
-      const q = searchQuery.value.trim().toLowerCase();
-      books = books.filter(b => b.TENSACH.toLowerCase().includes(q));
+      const q = removeVietnameseTones(searchQuery.value.trim().toLowerCase());
+      books = books.filter(b => removeVietnameseTones(b.TENSACH.toLowerCase()).includes(q));
     }
 
     return books;

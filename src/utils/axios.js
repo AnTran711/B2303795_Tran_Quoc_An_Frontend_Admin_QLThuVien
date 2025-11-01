@@ -3,6 +3,7 @@ import { toast } from 'vue3-toastify';
 import { useBookStore } from '@/stores/useBookStore';
 import { usePublisherStore } from '@/stores/usePublisherStore';
 import { useGenreStore } from '@/stores/useGenreStore';
+import { useBorrowRecordStore } from '@/stores/useBorrowRecordStore';
 
 const api = axios.create({
   baseURL: 'http://localhost:3000/api',
@@ -24,9 +25,12 @@ api.interceptors.request.use(
     const bookStore = useBookStore();
     const publisherStore = usePublisherStore();
     const genreStore = useGenreStore();
+    const borrowRecordStore = useBorrowRecordStore()
+
     bookStore.loading = true;
     publisherStore.loading = true;
     genreStore.loading = true;
+    borrowRecordStore.loading = true;
 
     return config;
   },
@@ -35,9 +39,13 @@ api.interceptors.request.use(
     const bookStore = useBookStore();
     const publisherStore = usePublisherStore();
     const genreStore = useGenreStore();
+    const borrowRecordStore = useBorrowRecordStore()
+    
     bookStore.loading = false;
     publisherStore.loading = false;
     genreStore.loading = false;
+    borrowRecordStore.loading = false;
+
     return Promise.reject(error);
   }
 )
@@ -47,18 +55,24 @@ api.interceptors.response.use(
     const bookStore = useBookStore();
     const publisherStore = usePublisherStore();
     const genreStore = useGenreStore();
+    const borrowRecordStore = useBorrowRecordStore()
+    
     bookStore.loading = false;
     publisherStore.loading = false;
     genreStore.loading = false;
+    borrowRecordStore.loading = false;
     return response;
   },
   (error) => {
     const bookStore = useBookStore();
     const publisherStore = usePublisherStore();
     const genreStore = useGenreStore();
+    const borrowRecordStore = useBorrowRecordStore()
+    
     bookStore.loading = false;
     publisherStore.loading = false;
     genreStore.loading = false;
+    borrowRecordStore.loading = false;
 
     let errorMessage = error?.message;
     if (error.response?.data?.message) {

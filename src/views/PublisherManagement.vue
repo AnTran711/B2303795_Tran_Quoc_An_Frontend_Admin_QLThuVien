@@ -189,22 +189,39 @@
           <td style="max-width: 400px; overflow: hidden;">{{ publisher.TENNXB }}</td>
           <td>{{ publisher.DIACHI }}</td>
           <td class="text-center">
-            <v-btn
-              icon
-              variant="text"
-              color="error"
-              @click="openDeleteConfirm(publisher.MANXB)"
+            <v-tooltip
+              location="top"
             >
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
-            <v-btn
-              icon
-              variant="text"
-              color="primary"
-              @click="showUpdateForm(publisher.MANXB)"
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon
+                  v-bind="props"
+                  variant="text"
+                  color="error"
+                  @click="openDeleteConfirm(publisher.MANXB)"
+                >
+                  <v-icon>mdi-delete</v-icon>
+                </v-btn>
+              </template>
+              <span>Xóa</span>
+            </v-tooltip>
+
+            <v-tooltip
+              location="top"
             >
-              <v-icon>mdi-file-document-edit-outline</v-icon>
-            </v-btn>
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon
+                  v-bind="props"
+                  variant="text"
+                  color="primary"
+                  @click="showUpdateForm(publisher.MANXB)"
+                >
+                  <v-icon>mdi-file-document-edit-outline</v-icon>
+                </v-btn>
+              </template>
+              <span>Sửa</span>
+            </v-tooltip>
           </td>
         </tr>
 

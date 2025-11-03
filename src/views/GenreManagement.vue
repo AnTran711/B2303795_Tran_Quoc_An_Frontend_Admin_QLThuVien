@@ -189,22 +189,39 @@
           <td style="max-width: 400px; overflow: hidden;">{{ genre.TENTHELOAI }}</td>
           <!-- <td>{{ genre.MOTA }}</td> -->
           <td class="text-center">
-            <v-btn
-              icon
-              variant="text"
-              color="error"
-              @click="openDeleteConfirm(genre.MATHELOAI)"
+            <v-tooltip
+              location="top"
             >
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
-            <v-btn
-              icon
-              variant="text"
-              color="primary"
-              @click="showUpdateForm(genre.MATHELOAI)"
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon
+                  v-bind="props"
+                  variant="text"
+                  color="error"
+                  @click="openDeleteConfirm(genre.MATHELOAI)"
+                >
+                  <v-icon>mdi-delete</v-icon>
+                </v-btn>
+              </template>
+              <span>Xóa</span>
+            </v-tooltip>
+
+            <v-tooltip
+              location="top"
             >
-              <v-icon>mdi-file-document-edit-outline</v-icon>
-            </v-btn>
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon
+                  v-bind="props"
+                  variant="text"
+                  color="primary"
+                  @click="showUpdateForm(genre.MATHELOAI)"
+                >
+                  <v-icon>mdi-file-document-edit-outline</v-icon>
+                </v-btn>
+              </template>
+              <span>Sửa</span>
+            </v-tooltip>
           </td>
         </tr>
 

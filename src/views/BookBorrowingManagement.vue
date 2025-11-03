@@ -6,7 +6,7 @@
   const borrowRecordStore = useBorrowRecordStore();
 
   // Lọc
-  const itemsFilter = ['Chờ duyệt', 'Đã duyệt', 'Đã trả', 'Từ chối'];
+  const itemsFilter = ['Chờ duyệt', 'Đang mượn', 'Đã trả', 'Từ chối'];
   const selectedFilter = ref('Chờ duyệt');
 
   const filterRecords = computed(() => {
@@ -24,12 +24,18 @@
   const showApproveConfirm = ref(false);
 
   const openApproveConfirm = (recordId) => {
-    recordSelectedId.value = recordId
+    recordSelectedId.value = recordId;
     showApproveConfirm.value = true;
   }
 
-  const approve = () => {
-    // Logic duyệt
+  const approve = async () => {
+    if(recordSelectedId.value) {
+      const res = await borrowRecordStore.approve(recordSelectedId.value);
+      toast.success(res.message);
+
+      recordSelectedId.value = null;
+      showApproveConfirm.value = false;
+    }
   }
 
   const cancelApprove = () => {
@@ -45,13 +51,42 @@
     showRejectConfirm.value = true;
   }
 
-  const reject = () => {
-    // Logic từ chối
+  const reject = async () => {
+    if(recordSelectedId.value) {
+      const res = await borrowRecordStore.reject(recordSelectedId.value);
+      toast.success(res.message);
+    
+      recordSelectedId.value = null;
+      showRejectConfirm.value = false;
+    }
   }
 
   const cancelReject = () => {
     recordSelectedId.value = null;
     showRejectConfirm.value = false;
+  }
+
+  // Xác nhận trả sách
+  const showReturnConfirm = ref(false);
+
+  const openReturnConfirm = (recordId) => {
+    recordSelectedId.value = recordId;
+    showReturnConfirm.value = true;
+  }
+
+  const returnBook = async () => {
+    if(recordSelectedId.value) {
+      const res = await borrowRecordStore.returnBook(recordSelectedId.value);
+      toast.success(res.message);
+    
+      recordSelectedId.value = null;
+      showReturnConfirm.value = false;
+    }
+  }
+
+  const cancelReturn = () => {
+    recordSelectedId.value = null;
+    showReturnConfirm.value = false;
   }
 
 </script>
@@ -76,7 +111,7 @@
     <v-table
       class="mt-2 rounded elevation-1"
       striped="even"
-      v-show="filterRecords.length ? true : false"
+      v-if="filterRecords.length ? true : false"
     >
       <thead class="bg-primary">
         <tr>
@@ -86,48 +121,88 @@
           <th class="text-left">Hạn trả</th>
           <th class="text-left">Ngày trả</th>
           <th class="text-center">Trạng thái</th>
-          <th v-if="selectedFilter === 'Chờ duyệt'" class="text-center">Hành động</th>
+          <th v-if="selectedFilter === 'Chờ duyệt' || selectedFilter === 'Đang mượn'" class="text-center">Hành động</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="record in filterRecords" :key="record._id">
-          <td>{{ record.DOCGIA.HOLOT + ' ' + record.DOCGIA.TEN }}</td>
-          <td style="max-width: 400px;">{{ record.SACH.TENSACH }}</td>
-          <td>{{ record.NGAYYEUCAU }}</td>
-          <td>{{ record.HANTRA }}</td>
-          <td>{{ record.NGAYTRA }}</td>
+        <tr v-for="record in filterRecords" :key="record?._id">
+          <td>{{ record?.DOCGIA?.HOLOT + ' ' + record?.DOCGIA?.TEN }}</td>
+          <td style="max-width: 400px;">{{ record?.SACH?.TENSACH }}</td>
+          <td>{{ record?.NGAYYEUCAU ? new Date(record?.NGAYYEUCAU).toLocaleDateString('vi-VN') : '--/--/----' }}</td>
+          <td>{{ record?.HANTRA ? new Date(record?.HANTRA).toLocaleDateString('vi-VN') : '--/--/----' }}</td>
+          <td>{{ record?.NGAYTRA ? new Date(record?.NGAYTRA).toLocaleDateString('vi-VN') : '--/--/----' }}</td>
           <td class="text-center">
             <v-chip
-              :color="record.TRANGTHAI === 'Chờ duyệt' ? 'warning' 
-                    : record.TRANGTHAI === 'Đã duyệt' ? 'success' 
-                    : record.TRANGTHAI === 'Đã trả' ? 'primary'
+              :color="record?.TRANGTHAI === 'Chờ duyệt' ? 'warning' 
+                    : record?.TRANGTHAI === 'Đang mượn' ? 'success' 
+                    : record?.TRANGTHAI === 'Đã trả' ? 'primary'
                     : 'error'"
               variant="flat"
             >
-              {{ record.TRANGTHAI }}
+              {{ record?.TRANGTHAI }}
             </v-chip>
           </td>
-          <td v-if="record.TRANGTHAI === 'Chờ duyệt'" class="text-center">
-            <v-btn
-              icon
-              variant="text"
-              color="success"
-              @click="openApproveConfirm(record._id)"
+          <td v-if="record?.TRANGTHAI === 'Chờ duyệt'" class="text-center">
+            <v-tooltip
+              location="top"
             >
-              <v-icon>mdi-check-bold</v-icon>
-            </v-btn>
-            <v-btn
-              icon
-              variant="text"
-              color="error"
-              @click="openRejectConfirm(record._id)"
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon
+                  v-bind="props"
+                  variant="text"
+                  color="success"
+                  @click="openApproveConfirm(record._id)"
+                >
+                  <v-icon>mdi-check-bold</v-icon>
+                </v-btn>
+              </template>
+              <span>Duyệt</span>
+            </v-tooltip>
+
+            <v-tooltip
+              location="top"
             >
-              <v-icon>mdi-close-thick</v-icon>
-            </v-btn>
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon
+                  v-bind="props"
+                  variant="text"
+                  color="error"
+                  @click="openRejectConfirm(record?._id)"
+                >
+                  <v-icon>mdi-close-thick</v-icon>
+                </v-btn>
+              </template>
+              <span>Từ chối</span>
+            </v-tooltip>
+          </td>
+
+          <td v-if="record?.TRANGTHAI === 'Đang mượn'" class="text-center">
+            <v-tooltip
+              location="top"
+            >
+              <template v-slot:activator="{ props }">
+                <v-btn
+                  icon
+                  v-bind="props"
+                  variant="text"
+                  color="primary"
+                  @click="openReturnConfirm(record?._id)"
+                >
+                  <v-icon>mdi-book-refresh</v-icon>
+                </v-btn>
+              </template>
+              <span>Trả sách</span>
+            </v-tooltip>
           </td>
         </tr>
       </tbody>
     </v-table>
+
+    <div v-else class="d-flex justify-center mt-8">
+      <span class="text-body-1">Không có yêu cầu</span>
+    </div>
   </div>
 
   <!-- Approve confirm -->
@@ -174,6 +249,30 @@
           Từ chối
         </v-btn>
         <v-btn variant="tonal" @click="cancelReject">Hủy</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-overlay>
+
+  <!-- Return confirm -->
+  <v-overlay
+    v-model="showReturnConfirm"
+    class="align-center justify-center"
+    @update:model-value="(val) => { if(!val) cancelReturn() }"
+  >
+    <v-card>
+      <v-card-title>Xác nhận trả sách</v-card-title>
+      <v-card-text>
+        Bạn có chắc chắn xác nhận độc giả đã trả cuốn sách này không?
+      </v-card-text>
+      <v-card-actions class="justify-end">
+        <v-btn
+          variant="elevated"
+          color="primary"
+          @click="returnBook"
+        >
+          Xác nhận
+        </v-btn>
+        <v-btn variant="tonal" @click="cancelReturn">Hủy</v-btn>
       </v-card-actions>
     </v-card>
   </v-overlay>

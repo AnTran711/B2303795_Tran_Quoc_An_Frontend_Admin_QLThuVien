@@ -1,21 +1,83 @@
 <script setup>
-  import { computed, ref, watch } from 'vue';
+  import { computed, onMounted, ref, watch } from 'vue';
   import { useBorrowRecordStore } from '@/stores/useBorrowRecordStore';
   import { toast } from 'vue3-toastify';
+  import { useRoute, useRouter } from 'vue-router';
 
   const borrowRecordStore = useBorrowRecordStore();
+  const router = useRouter();
+  const route = useRoute();
+
+  onMounted(async () => {
+    // Nếu URL có query thì đồng bộ lại
+    if (route.query.filter) selectedFilter.value = route.query.filter;
+    if (route.query.sort) selectedSort.value = route.query.sort;
+    if (route.query.search) searchQuery.value = route.query.search;
+
+    // Gọi API lần đầu
+    await borrowRecordStore.fetchBorrowRecords(
+      selectedFilter.value,
+      selectedSort.value,
+      searchQuery.value
+    );
+  })
 
   // Lọc
-  const itemsFilter = ['Chờ duyệt', 'Đang mượn', 'Đã trả', 'Từ chối'];
-  const selectedFilter = ref('Chờ duyệt');
+  const filterItems = [
+    {
+      title: 'Chờ duyệt',
+      value: 'pending'
+    },
+    {
+      title: 'Đang mượn',
+      value: 'borrowed'
+    },
+    {
+      title: 'Đã trả',
+      value: 'returned'
+    },
+    {
+      title: 'Từ chối',
+      value: 'rejected'
+    }
+  ];
+  const selectedFilter = ref('pending');
 
-  const filterRecords = computed(() => {
-    let records = borrowRecordStore.borrowRecords;
+  // Sắp xếp
+  const sortItems = [
+    {
+      title: 'Cũ nhất',
+      value: 'asc'
+    },
+    {
+      title: 'Mới nhất',
+      value: 'desc'
+    }
+  ];
+  const selectedSort = ref('asc');
 
-    records = records.filter(r => r.TRANGTHAI === selectedFilter.value);
+  // Tìm kiếm
+  const searchQuery = ref('');
 
-    return records;
-  });
+  // Biến để delay khi người dùng gõ nhanh, sau khi người dùng ngưng gõ 0.5s thì mới call API
+  let debounceTimer = null;
+
+  watch(
+    [selectedFilter, selectedSort, searchQuery],
+    async ([filter, sort, search]) => {
+      // Hủy bỏ setTimeout cũ của kí tự được nhập vào trước đó
+      clearTimeout(debounceTimer);
+
+      // Chỉ khi người dùng ngưng gõ 0.5s thì call API
+      debounceTimer = setTimeout(async () => {
+        router.push({
+          path: '/book-borrowing-management',
+          query: { filter, sort, search }
+        });
+        await borrowRecordStore.fetchBorrowRecords(filter, sort, search);
+      }, 500);
+    }
+  );
 
   // Biến lưu id của record được chọn để duyệt hoặc từ chối
   const recordSelectedId = ref(null);
@@ -32,6 +94,7 @@
     if(recordSelectedId.value) {
       const res = await borrowRecordStore.approve(recordSelectedId.value);
       toast.success(res.message);
+      await borrowRecordStore.fetchBorrowRecords(route.query.filter, route.query.sort, route.query.search);
 
       recordSelectedId.value = null;
       showApproveConfirm.value = false;
@@ -55,6 +118,7 @@
     if(recordSelectedId.value) {
       const res = await borrowRecordStore.reject(recordSelectedId.value);
       toast.success(res.message);
+      await borrowRecordStore.fetchBorrowRecords(route.query.filter, route.query.sort, route.query.search);
     
       recordSelectedId.value = null;
       showRejectConfirm.value = false;
@@ -78,6 +142,7 @@
     if(recordSelectedId.value) {
       const res = await borrowRecordStore.returnBook(recordSelectedId.value);
       toast.success(res.message);
+      await borrowRecordStore.fetchBorrowRecords(route.query.filter, route.query.sort, route.query.search);
     
       recordSelectedId.value = null;
       showReturnConfirm.value = false;
@@ -89,21 +154,61 @@
     showReturnConfirm.value = false;
   }
 
+  // Hàm lấy ra trạng thái
+  const getStatusText = (value) => {
+    return filterItems.find(i => i.value === value).title;
+  }
+
+  // Hàm chuẩn hóa ngày
+  const formatDate = (date) => {
+    return date ? new Date(date).toLocaleDateString('vi-VN') : '--/--/----'
+  }
+
 </script>
 
 <template>
-  <div class="pa-4">
+  <v-container fluid class="pa-4">
     <!-- Toolbar -->
-    <v-row class="pa-4 bg-white rounded elevation-1 align-center" no-gutters >
-      <v-col cols="2">
+    <v-row class="pa-4 bg-white rounded elevation-1 align-center" no-gutters>
+      <v-col cols="3" class="pa-2">
         <v-select
           label="Trạng thái"
-          :items="itemsFilter"
+          :items="filterItems"
+          item-title="title"
+          item-value="value"
           v-model="selectedFilter"
           hide-details
           variant="outlined"
           density="compact"
+          color="primary"
         ></v-select>
+      </v-col>
+
+      <v-col cols="3" class="pa-2">
+        <v-select
+          label="Sắp xếp theo"
+          :items="sortItems"
+          item-title="title"
+          item-value="value"
+          v-model="selectedSort"
+          hide-details
+          variant="outlined"
+          density="compact"
+          color="primary"
+        ></v-select>
+      </v-col>
+
+      <v-col cols="6" class="pa-2">
+        <v-text-field
+          v-model="searchQuery"
+          prepend-inner-icon="mdi-magnify"
+          hide-details
+          variant="outlined"
+          density="compact"
+          clearable
+          label="Tìm kiếm sách"
+          color="primary"
+        />
       </v-col>
     </v-row>
 
@@ -111,7 +216,7 @@
     <v-table
       class="mt-2 rounded elevation-1"
       striped="even"
-      v-if="filterRecords.length ? true : false"
+      v-if="borrowRecordStore.borrowRecords.length ? true : false"
     >
       <thead class="bg-primary">
         <tr>
@@ -121,28 +226,28 @@
           <th class="text-left">Hạn trả</th>
           <th class="text-left">Ngày trả</th>
           <th class="text-center">Trạng thái</th>
-          <th v-if="selectedFilter === 'Chờ duyệt' || selectedFilter === 'Đang mượn'" class="text-center">Hành động</th>
+          <th class="text-center">Hành động</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="record in filterRecords" :key="record?._id">
+        <tr v-for="record in borrowRecordStore.borrowRecords" :key="record?._id">
           <td>{{ record?.DOCGIA?.HOLOT + ' ' + record?.DOCGIA?.TEN }}</td>
           <td style="max-width: 400px;">{{ record?.SACH?.TENSACH }}</td>
-          <td>{{ record?.NGAYYEUCAU ? new Date(record?.NGAYYEUCAU).toLocaleDateString('vi-VN') : '--/--/----' }}</td>
-          <td>{{ record?.HANTRA ? new Date(record?.HANTRA).toLocaleDateString('vi-VN') : '--/--/----' }}</td>
-          <td>{{ record?.NGAYTRA ? new Date(record?.NGAYTRA).toLocaleDateString('vi-VN') : '--/--/----' }}</td>
+          <td>{{ formatDate(record?.NGAYYEUCAU) }}</td>
+          <td>{{ formatDate(record?.HANTRA) }}</td>
+          <td>{{ formatDate(record?.NGAYTRA) }}</td>
           <td class="text-center">
             <v-chip
-              :color="record?.TRANGTHAI === 'Chờ duyệt' ? 'warning' 
-                    : record?.TRANGTHAI === 'Đang mượn' ? 'success' 
-                    : record?.TRANGTHAI === 'Đã trả' ? 'primary'
+              :color="record?.TRANGTHAI === 'pending' ? 'warning' 
+                    : record?.TRANGTHAI === 'borrowed' ? 'success' 
+                    : record?.TRANGTHAI === 'returned' ? 'primary'
                     : 'error'"
               variant="flat"
             >
-              {{ record?.TRANGTHAI }}
+              {{ getStatusText(record?.TRANGTHAI) }}
             </v-chip>
           </td>
-          <td v-if="record?.TRANGTHAI === 'Chờ duyệt'" class="text-center">
+          <td v-if="record?.TRANGTHAI === 'pending'" class="text-center">
             <v-tooltip
               location="top"
             >
@@ -178,7 +283,7 @@
             </v-tooltip>
           </td>
 
-          <td v-if="record?.TRANGTHAI === 'Đang mượn'" class="text-center">
+          <td v-else-if="record?.TRANGTHAI === 'borrowed'" class="text-center">
             <v-tooltip
               location="top"
             >
@@ -196,6 +301,8 @@
               <span>Trả sách</span>
             </v-tooltip>
           </td>
+
+          <td v-else></td>
         </tr>
       </tbody>
     </v-table>
@@ -203,7 +310,7 @@
     <div v-else class="d-flex justify-center mt-8">
       <span class="text-body-1">Không có yêu cầu</span>
     </div>
-  </div>
+  </v-container>
 
   <!-- Approve confirm -->
   <v-overlay
@@ -276,5 +383,4 @@
       </v-card-actions>
     </v-card>
   </v-overlay>
-
 </template>

@@ -115,7 +115,7 @@
 </script>
 
 <template>
-  <div class="pa-4">
+  <v-container fluid class="pa-4">
     <!-- Toolbar -->
     <v-row class="pa-4 bg-white rounded elevation-1 align-center" no-gutters >
       <v-col class="d-flex align-center" cols="3">
@@ -128,6 +128,7 @@
           density="compact"
           clearable
           prepend-inner-icon="mdi-magnify"
+          color="primary"
         />
       </v-col>
       <v-col cols="3" class="d-flex flex-row align-center">
@@ -138,6 +139,7 @@
           hide-details
           variant="outlined"
           density="compact"
+          color="primary"
         ></v-select>
         <v-btn
           v-if="typeSort"
@@ -162,8 +164,8 @@
           color="primary"
           @click="showForm = true"
         >
-          <v-icon>mdi-plus</v-icon>
-          Thêm nhà xuất bản
+          <v-icon class="mr-2">mdi-plus</v-icon>
+          Thêm
         </v-btn>
       </v-col>
     </v-row>
@@ -259,7 +261,7 @@
     <!-- Pagination -->
     <Pagination v-model="currentPage" :length="totalPage"></Pagination>
 
-  </div>
+  </v-container>
 
   <!-- Form thêm/sửa sách -->
   <FormAddOrUpdatePublisher

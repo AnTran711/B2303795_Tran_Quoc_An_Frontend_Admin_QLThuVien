@@ -8,20 +8,6 @@
   const router = useRouter();
   const route = useRoute();
 
-  onMounted(async () => {
-    // Nếu URL có query thì đồng bộ lại
-    if (route.query.filter) selectedFilter.value = route.query.filter;
-    if (route.query.sort) selectedSort.value = route.query.sort;
-    if (route.query.search) searchQuery.value = route.query.search;
-
-    // Gọi API lần đầu
-    await borrowRecordStore.fetchBorrowRecords(
-      selectedFilter.value,
-      selectedSort.value,
-      searchQuery.value
-    );
-  })
-
   // Lọc
   const filterItems = [
     {
@@ -62,20 +48,39 @@
   // Biến để delay khi người dùng gõ nhanh, sau khi người dùng ngưng gõ 0.5s thì mới call API
   let debounceTimer = null;
 
-  watch(
-    [selectedFilter, selectedSort, searchQuery],
-    async ([filter, sort, search]) => {
-      // Hủy bỏ setTimeout cũ của kí tự được nhập vào trước đó
-      clearTimeout(debounceTimer);
+  let isInitialized = ref(false);
 
-      // Chỉ khi người dùng ngưng gõ 0.5s thì call API
-      debounceTimer = setTimeout(async () => {
+  const fetchData = async () => {
+    // Hủy bỏ setTimeout cũ của kí tự được nhập vào trước đó
+    clearTimeout(debounceTimer);
+
+    // Chỉ khi người dùng ngưng gõ 0.5s thì call API
+    debounceTimer = setTimeout(async () => {
+      if(isInitialized.value) {
         router.push({
           path: '/book-borrowing-management',
-          query: { filter, sort, search }
+          query: {
+            filter: selectedFilter.value,
+            sort: selectedSort.value,
+            search: searchQuery.value
+          }
         });
-        await borrowRecordStore.fetchBorrowRecords(filter, sort, search);
-      }, 500);
+      }
+
+      await borrowRecordStore.fetchBorrowRecords(
+        selectedFilter.value,
+        selectedSort.value,
+        searchQuery.value
+      );
+    }, isInitialized.value ? 500 : 0); // Lần đầu không delay
+  };
+
+  watch(
+    [selectedFilter, selectedSort, searchQuery],
+    () => {
+      if(isInitialized.value) {
+        fetchData();
+      }
     }
   );
 
@@ -94,7 +99,6 @@
     if(recordSelectedId.value) {
       const res = await borrowRecordStore.approve(recordSelectedId.value);
       toast.success(res.message);
-      await borrowRecordStore.fetchBorrowRecords(route.query.filter, route.query.sort, route.query.search);
 
       recordSelectedId.value = null;
       showApproveConfirm.value = false;
@@ -118,7 +122,6 @@
     if(recordSelectedId.value) {
       const res = await borrowRecordStore.reject(recordSelectedId.value);
       toast.success(res.message);
-      await borrowRecordStore.fetchBorrowRecords(route.query.filter, route.query.sort, route.query.search);
     
       recordSelectedId.value = null;
       showRejectConfirm.value = false;
@@ -142,7 +145,6 @@
     if(recordSelectedId.value) {
       const res = await borrowRecordStore.returnBook(recordSelectedId.value);
       toast.success(res.message);
-      await borrowRecordStore.fetchBorrowRecords(route.query.filter, route.query.sort, route.query.search);
     
       recordSelectedId.value = null;
       showReturnConfirm.value = false;
@@ -164,6 +166,19 @@
     return date ? new Date(date).toLocaleDateString('vi-VN') : '--/--/----'
   }
 
+  // Xử lý lúc vào trang lần đầu hoặc reload trang
+  onMounted(async () => {
+    // Nếu URL có query thì đồng bộ lại, không trigger watch
+    if (route.query.filter) selectedFilter.value = route.query.filter;
+    if (route.query.sort) selectedSort.value = route.query.sort;
+    if (route.query.search) searchQuery.value = route.query.search;
+
+    // Gọi API lần đầu
+    await fetchData();
+
+    // Đánh dấu khởi tạo xong
+    isInitialized.value = true;
+  })
 </script>
 
 <template>

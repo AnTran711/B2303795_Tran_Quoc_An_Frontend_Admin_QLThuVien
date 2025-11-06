@@ -18,7 +18,6 @@
     await bookStore.fetchBooks();
     await publisherStore.fetchPublishers();
     await genreStore.fetchGenres();
-    await borrowRecordStore.fetchBorrowRecords();
   });
 
   const drawer = ref(true);

@@ -19,8 +19,8 @@ export const useBorrowRecordStore = defineStore('borrowRecord', () => {
   // Hàm duyệt cho mượn sách
   async function approve(recordId) {
     const res = await api.put(`/borrow-records/approve/${recordId}`);
-    borrowRecords.value = borrowRecords.value.map(
-      r => r._id === res.data.data._id ? res.data.data : r
+    borrowRecords.value = borrowRecords.value.filter(
+      r => r._id !== res.data.data._id
     );
     return res.data;
   }
@@ -28,8 +28,8 @@ export const useBorrowRecordStore = defineStore('borrowRecord', () => {
   // Hàm từ chối cho mượn sách
   async function reject(recordId) {
     const res = await api.put(`/borrow-records/reject/${recordId}`);
-    borrowRecords.value = borrowRecords.value.map(
-      r => r._id === res.data.data._id ? res.data.data : r
+    borrowRecords.value = borrowRecords.value.filter(
+      r => r._id !== res.data.data._id
     );
     return res.data;
   }
@@ -37,8 +37,8 @@ export const useBorrowRecordStore = defineStore('borrowRecord', () => {
   // Hàm trả sách
   async function returnBook(recordId) {
     const res = await api.put(`/borrow-records/return/${recordId}`);
-    borrowRecords.value = borrowRecords.value.map(
-      r => r._id === res.data.data._id ? res.data.data : r
+    borrowRecords.value = borrowRecords.value.filter(
+      r => r._id !== res.data.data._id
     );
     return res.data;
   }

@@ -92,11 +92,12 @@
 
   // Delete comfirm function
   async function deleteConfirm() {
+    showDeleteConfirm.value = false;
+    
     if(selectedGenreId.value) {
       const res = await genreStore.deleteGenre(selectedGenreId.value);
       toast.success(res.message);
       selectedGenreId.value = null;
-      showDeleteConfirm.value = false;
 
       // Nếu xóa hết phần tử của trang cuối thì lùi về 1 trang
       const start = genresInPage * (currentPage.value - 1);

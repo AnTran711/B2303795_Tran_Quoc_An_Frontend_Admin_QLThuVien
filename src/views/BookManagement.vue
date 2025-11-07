@@ -113,11 +113,12 @@
 
   // Delete comfirm function
   async function deleteConfirm() {
+    showDeleteConfirm.value = false;
+    
     if(selectedBookId.value) {
       const res = await bookStore.deleteBook(selectedBookId.value);
       toast.success(res.message);
       selectedBookId.value = null;
-      showDeleteConfirm.value = false;
 
       // Nếu xóa hết phần tử của trang cuối thì lùi về 1 trang
       const start = bookInPage * (currentPage.value - 1);

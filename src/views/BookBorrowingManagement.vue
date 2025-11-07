@@ -48,6 +48,7 @@
   // Biến để delay khi người dùng gõ nhanh, sau khi người dùng ngưng gõ 0.5s thì mới call API
   let debounceTimer = null;
 
+  // Biến để xác định khi nào thì load trạng thái từ URL xong
   let isInitialized = ref(false);
 
   const fetchData = async () => {
@@ -96,12 +97,13 @@
   }
 
   const approve = async () => {
+    showApproveConfirm.value = false;
+
     if(recordSelectedId.value) {
       const res = await borrowRecordStore.approve(recordSelectedId.value);
       toast.success(res.message);
 
       recordSelectedId.value = null;
-      showApproveConfirm.value = false;
     }
   }
 
@@ -119,12 +121,13 @@
   }
 
   const reject = async () => {
+    showRejectConfirm.value = false;
+
     if(recordSelectedId.value) {
       const res = await borrowRecordStore.reject(recordSelectedId.value);
       toast.success(res.message);
     
       recordSelectedId.value = null;
-      showRejectConfirm.value = false;
     }
   }
 
@@ -142,12 +145,13 @@
   }
 
   const returnBook = async () => {
+    showReturnConfirm.value = false;
+    
     if(recordSelectedId.value) {
       const res = await borrowRecordStore.returnBook(recordSelectedId.value);
       toast.success(res.message);
     
       recordSelectedId.value = null;
-      showReturnConfirm.value = false;
     }
   }
 

@@ -92,11 +92,12 @@
 
   // Delete comfirm function
   async function deleteConfirm() {
+    showDeleteConfirm.value = false;
+    
     if(selectedPublisherId.value) {
       const res = await publisherStore.deletePublisher(selectedPublisherId.value);
       toast.success(res.message);
       selectedPublisherId.value = null;
-      showDeleteConfirm.value = false;
 
       // Nếu xóa hết phần tử của trang cuối thì lùi về 1 trang
       const start = publisherInPage * (currentPage.value - 1);

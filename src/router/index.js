@@ -6,6 +6,10 @@ import PublisherManagement from '@/views/PublisherManagement.vue';
 import NotFound from '@/views/NotFound.vue';
 import GenreManagement from '@/views/GenreManagement.vue';
 import BookBorrowingManagement from '@/views/BookBorrowingManagement.vue';
+import Login from '@/views/Login.vue';
+import Register from '@/views/Register.vue';
+import { useEmployeeStore } from '@/stores/useEmployeeStore';
+import ChangePassword from '@/views/ChangePassword.vue';
 
 const routes = [
   {
@@ -34,6 +38,18 @@ const routes = [
       }
     ]
   },
+  {
+    path: '/login',
+    component: Login,
+  },
+  {
+    path: '/register',
+    component: Register
+  },
+  {
+    path: '/change-password',
+    component: ChangePassword
+  },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound }
 ]
 
@@ -48,6 +64,20 @@ const router = createRouter({
       // Mặc định cuộn lên đầu trang
       return { top: 0 }
     }
+  }
+});
+
+// Guard toàn cục
+router.beforeEach((to, from, next) => {
+  const employeeStore = useEmployeeStore();
+  const loggedIn = !!employeeStore.employee;
+
+  if (!loggedIn && to.path !== '/login') {
+    next('/login');
+  } else if (loggedIn && to.path === '/login') {
+    next('/');
+  } else {
+    next();
   }
 });
 

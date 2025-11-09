@@ -49,7 +49,7 @@
   // Sắp xếp
   const itemsSort = ['Mã sách'];
   const selectedSortField = ref('Mã sách');
-  const typeSort = ref(true);
+  const typeSort = ref(true); // true: tăng dần
 
   // paging
   const bookInPage = 5;

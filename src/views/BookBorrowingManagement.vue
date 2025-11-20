@@ -1,70 +1,71 @@
 <script setup>
-  import { computed, onMounted, ref, watch } from 'vue';
-  import { useBorrowRecordStore } from '@/stores/useBorrowRecordStore';
-  import { toast } from 'vue3-toastify';
-  import { useRoute, useRouter } from 'vue-router';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useBorrowRecordStore } from '@/stores/useBorrowRecordStore';
+import { toast } from 'vue3-toastify';
+import { useRoute, useRouter } from 'vue-router';
 
-  const borrowRecordStore = useBorrowRecordStore();
-  const router = useRouter();
-  const route = useRoute();
+const borrowRecordStore = useBorrowRecordStore();
+const router = useRouter();
+const route = useRoute();
 
-  // Lọc
-  const filterItems = [
-    {
-      title: 'Chờ duyệt',
-      value: 'pending'
-    },
-    {
-      title: 'Đang mượn',
-      value: 'borrowed'
-    },
-    {
-      title: 'Đã trả',
-      value: 'returned'
-    },
-    {
-      title: 'Từ chối',
-      value: 'rejected'
-    }
-  ];
-  const selectedFilter = ref('pending');
+// Lọc
+const filterItems = [
+  {
+    title: 'Chờ duyệt',
+    value: 'pending',
+  },
+  {
+    title: 'Đang mượn',
+    value: 'borrowed',
+  },
+  {
+    title: 'Đã trả',
+    value: 'returned',
+  },
+  {
+    title: 'Từ chối',
+    value: 'rejected',
+  },
+];
+const selectedFilter = ref('pending');
 
-  // Sắp xếp
-  const sortItems = [
-    {
-      title: 'Cũ nhất',
-      value: 'asc'
-    },
-    {
-      title: 'Mới nhất',
-      value: 'desc'
-    }
-  ];
-  const selectedSort = ref('asc');
+// Sắp xếp
+const sortItems = [
+  {
+    title: 'Cũ nhất',
+    value: 'asc',
+  },
+  {
+    title: 'Mới nhất',
+    value: 'desc',
+  },
+];
+const selectedSort = ref('asc');
 
-  // Tìm kiếm
-  const searchQuery = ref('');
+// Tìm kiếm
+const searchQuery = ref('');
 
-  // Biến để delay khi người dùng gõ nhanh, sau khi người dùng ngưng gõ 0.5s thì mới call API
-  let debounceTimer = null;
+// Biến để delay khi người dùng gõ nhanh, sau khi người dùng ngưng gõ 0.5s thì mới call API
+let debounceTimer = null;
 
-  // Biến để xác định khi nào thì load trạng thái từ URL xong
-  let isInitialized = ref(false);
+// Biến để xác định khi nào thì load trạng thái từ URL xong
+let isInitialized = ref(false);
 
-  const fetchData = async () => {
-    // Hủy bỏ setTimeout cũ của kí tự được nhập vào trước đó
-    clearTimeout(debounceTimer);
+const fetchData = async () => {
+  // Hủy bỏ setTimeout cũ của kí tự được nhập vào trước đó
+  clearTimeout(debounceTimer);
 
-    // Chỉ khi người dùng ngưng gõ 0.5s thì call API
-    debounceTimer = setTimeout(async () => {
-      if(isInitialized.value) {
-        router.push({
+  // Chỉ khi người dùng ngưng gõ 0.5s thì call API
+  debounceTimer = setTimeout(
+    async () => {
+      if (isInitialized.value) {
+        router.replace({
           path: '/book-borrowing-management',
           query: {
             filter: selectedFilter.value,
             sort: selectedSort.value,
-            search: searchQuery.value
-          }
+            search: searchQuery.value,
+          },
         });
       }
 
@@ -73,116 +74,122 @@
         selectedSort.value,
         searchQuery.value
       );
-    }, isInitialized.value ? 500 : 0); // Lần đầu không delay
-  };
+    },
+    isInitialized.value ? 500 : 0
+  ); // Lần đầu không delay
+};
 
-  watch(
-    [selectedFilter, selectedSort, searchQuery],
-    () => {
-      if(isInitialized.value) {
-        fetchData();
-      }
-    }
-  );
-
-  // Biến lưu id của record được chọn để duyệt hoặc từ chối
-  const recordSelectedId = ref(null);
-
-  // Xác nhận duyệt
-  const showApproveConfirm = ref(false);
-
-  const openApproveConfirm = (recordId) => {
-    recordSelectedId.value = recordId;
-    showApproveConfirm.value = true;
+watch([selectedFilter, selectedSort, searchQuery], () => {
+  if (isInitialized.value) {
+    fetchData();
   }
+});
 
-  const approve = async () => {
-    showApproveConfirm.value = false;
+// Biến lưu id của record được chọn để duyệt hoặc từ chối
+const recordSelectedId = ref(null);
 
-    if(recordSelectedId.value) {
-      const res = await borrowRecordStore.approve(recordSelectedId.value);
-      toast.success(res.message);
+// Xác nhận duyệt
+const showApproveConfirm = ref(false);
 
-      recordSelectedId.value = null;
-    }
-  }
+const openApproveConfirm = (recordId) => {
+  recordSelectedId.value = recordId;
+  showApproveConfirm.value = true;
+};
 
-  const cancelApprove = () => {
+const approve = async () => {
+  showApproveConfirm.value = false;
+
+  if (recordSelectedId.value) {
+    const res = await borrowRecordStore.approve(recordSelectedId.value);
+    toast.success(res.message);
+
     recordSelectedId.value = null;
-    showApproveConfirm.value = false;
   }
+};
 
-  // Xác nhận từ chối
-  const showRejectConfirm = ref(false);
+const cancelApprove = () => {
+  recordSelectedId.value = null;
+  showApproveConfirm.value = false;
+};
 
-  const openRejectConfirm = (recordId) => {
-    recordSelectedId.value = recordId;
-    showRejectConfirm.value = true;
-  }
+// Xác nhận từ chối
+const showRejectConfirm = ref(false);
 
-  const reject = async () => {
-    showRejectConfirm.value = false;
+const openRejectConfirm = (recordId) => {
+  recordSelectedId.value = recordId;
+  showRejectConfirm.value = true;
+};
 
-    if(recordSelectedId.value) {
-      const res = await borrowRecordStore.reject(recordSelectedId.value);
-      toast.success(res.message);
-    
-      recordSelectedId.value = null;
-    }
-  }
+const reject = async () => {
+  showRejectConfirm.value = false;
 
-  const cancelReject = () => {
+  if (recordSelectedId.value) {
+    const res = await borrowRecordStore.reject(recordSelectedId.value);
+    toast.success(res.message);
+
     recordSelectedId.value = null;
-    showRejectConfirm.value = false;
   }
+};
 
-  // Xác nhận trả sách
-  const showReturnConfirm = ref(false);
+const cancelReject = () => {
+  recordSelectedId.value = null;
+  showRejectConfirm.value = false;
+};
 
-  const openReturnConfirm = (recordId) => {
-    recordSelectedId.value = recordId;
-    showReturnConfirm.value = true;
-  }
+// Xác nhận trả sách
+const showReturnConfirm = ref(false);
 
-  const returnBook = async () => {
-    showReturnConfirm.value = false;
-    
-    if(recordSelectedId.value) {
-      const res = await borrowRecordStore.returnBook(recordSelectedId.value);
-      toast.success(res.message);
-    
-      recordSelectedId.value = null;
-    }
-  }
+const openReturnConfirm = (recordId) => {
+  recordSelectedId.value = recordId;
+  showReturnConfirm.value = true;
+};
 
-  const cancelReturn = () => {
+const returnBook = async () => {
+  showReturnConfirm.value = false;
+
+  if (recordSelectedId.value) {
+    const res = await borrowRecordStore.returnBook(recordSelectedId.value);
+    toast.success(res.message);
+
     recordSelectedId.value = null;
-    showReturnConfirm.value = false;
   }
+};
 
-  // Hàm lấy ra trạng thái
-  const getStatusText = (value) => {
-    return filterItems.find(i => i.value === value).title;
+const cancelReturn = () => {
+  recordSelectedId.value = null;
+  showReturnConfirm.value = false;
+};
+
+// Hàm lấy ra trạng thái
+const getStatusText = (value) => {
+  return filterItems.find((i) => i.value === value).title;
+};
+
+// Hàm chuẩn hóa ngày
+const formatDate = (date) => {
+  return date ? new Date(date).toLocaleDateString('vi-VN') : '--/--/----';
+};
+
+// Xử lý lúc vào trang lần đầu hoặc reload trang
+onMounted(async () => {
+  // Nếu URL có query thì đồng bộ lại, không trigger watch
+  if (route.query.filter) selectedFilter.value = route.query.filter;
+  if (route.query.sort) selectedSort.value = route.query.sort;
+  if (route.query.search) searchQuery.value = route.query.search;
+
+  // Gọi API lần đầu
+  await fetchData();
+
+  // Đánh dấu khởi tạo xong
+  isInitialized.value = true;
+});
+
+onUnmounted(() => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
   }
-
-  // Hàm chuẩn hóa ngày
-  const formatDate = (date) => {
-    return date ? new Date(date).toLocaleDateString('vi-VN') : '--/--/----'
-  }
-
-  // Xử lý lúc vào trang lần đầu hoặc reload trang
-  onMounted(async () => {
-    // Nếu URL có query thì đồng bộ lại, không trigger watch
-    if (route.query.filter) selectedFilter.value = route.query.filter;
-    if (route.query.sort) selectedSort.value = route.query.sort;
-    if (route.query.search) searchQuery.value = route.query.search;
-
-    // Gọi API lần đầu
-    await fetchData();
-
-    // Đánh dấu khởi tạo xong
-    isInitialized.value = true;
-  })
+});
 </script>
 
 <template>
@@ -249,27 +256,33 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="record in borrowRecordStore.borrowRecords" :key="record?._id">
+        <tr
+          v-for="record in borrowRecordStore.borrowRecords"
+          :key="record?._id"
+        >
           <td>{{ record?.DOCGIA?.HOLOT + ' ' + record?.DOCGIA?.TEN }}</td>
-          <td style="max-width: 400px;">{{ record?.SACH?.TENSACH }}</td>
+          <td style="max-width: 400px">{{ record?.SACH?.TENSACH }}</td>
           <td>{{ formatDate(record?.NGAYYEUCAU) }}</td>
           <td>{{ formatDate(record?.HANTRA) }}</td>
           <td>{{ formatDate(record?.NGAYTRA) }}</td>
           <td class="text-center">
             <v-chip
-              :color="record?.TRANGTHAI === 'pending' ? 'warning' 
-                    : record?.TRANGTHAI === 'borrowed' ? 'success' 
-                    : record?.TRANGTHAI === 'returned' ? 'primary'
-                    : 'error'"
+              :color="
+                record?.TRANGTHAI === 'pending'
+                  ? 'warning'
+                  : record?.TRANGTHAI === 'borrowed'
+                  ? 'success'
+                  : record?.TRANGTHAI === 'returned'
+                  ? 'primary'
+                  : 'error'
+              "
               variant="flat"
             >
               {{ getStatusText(record?.TRANGTHAI) }}
             </v-chip>
           </td>
           <td v-if="record?.TRANGTHAI === 'pending'" class="text-center">
-            <v-tooltip
-              location="top"
-            >
+            <v-tooltip location="top">
               <template v-slot:activator="{ props }">
                 <v-btn
                   icon
@@ -284,9 +297,7 @@
               <span>Duyệt</span>
             </v-tooltip>
 
-            <v-tooltip
-              location="top"
-            >
+            <v-tooltip location="top">
               <template v-slot:activator="{ props }">
                 <v-btn
                   icon
@@ -303,9 +314,7 @@
           </td>
 
           <td v-else-if="record?.TRANGTHAI === 'borrowed'" class="text-center">
-            <v-tooltip
-              location="top"
-            >
+            <v-tooltip location="top">
               <template v-slot:activator="{ props }">
                 <v-btn
                   icon
@@ -335,7 +344,11 @@
   <v-overlay
     v-model="showApproveConfirm"
     class="align-center justify-center"
-    @update:model-value="(val) => { if(!val) cancelApprove() }"
+    @update:model-value="
+      (val) => {
+        if (!val) cancelApprove();
+      }
+    "
   >
     <v-card>
       <v-card-title>Xác nhận duyệt</v-card-title>
@@ -343,23 +356,23 @@
         Bạn có chắc chắn muốn cho độc giả này mượn sách?
       </v-card-text>
       <v-card-actions class="justify-end">
-        <v-btn
-          variant="elevated"
-          color="primary"
-          @click="approve"
-        >
+        <v-btn variant="elevated" color="primary" @click="approve">
           Duyệt
         </v-btn>
         <v-btn variant="tonal" @click="cancelApprove">Hủy</v-btn>
       </v-card-actions>
     </v-card>
   </v-overlay>
-  
+
   <!-- Reject confirm -->
   <v-overlay
     v-model="showRejectConfirm"
     class="align-center justify-center"
-    @update:model-value="(val) => { if(!val) cancelReject() }"
+    @update:model-value="
+      (val) => {
+        if (!val) cancelReject();
+      }
+    "
   >
     <v-card>
       <v-card-title>Xác nhận từ chối</v-card-title>
@@ -367,11 +380,7 @@
         Bạn có chắc chắn muốn từ chối cho độc giả này mượn sách?
       </v-card-text>
       <v-card-actions class="justify-end">
-        <v-btn
-          variant="elevated"
-          color="error"
-          @click="reject"
-        >
+        <v-btn variant="elevated" color="error" @click="reject">
           Từ chối
         </v-btn>
         <v-btn variant="tonal" @click="cancelReject">Hủy</v-btn>
@@ -383,7 +392,11 @@
   <v-overlay
     v-model="showReturnConfirm"
     class="align-center justify-center"
-    @update:model-value="(val) => { if(!val) cancelReturn() }"
+    @update:model-value="
+      (val) => {
+        if (!val) cancelReturn();
+      }
+    "
   >
     <v-card>
       <v-card-title>Xác nhận trả sách</v-card-title>
@@ -391,11 +404,7 @@
         Bạn có chắc chắn xác nhận độc giả đã trả cuốn sách này không?
       </v-card-text>
       <v-card-actions class="justify-end">
-        <v-btn
-          variant="elevated"
-          color="primary"
-          @click="returnBook"
-        >
+        <v-btn variant="elevated" color="primary" @click="returnBook">
           Xác nhận
         </v-btn>
         <v-btn variant="tonal" @click="cancelReturn">Hủy</v-btn>

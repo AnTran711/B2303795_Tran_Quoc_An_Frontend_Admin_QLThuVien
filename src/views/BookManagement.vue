@@ -1,145 +1,198 @@
 <script setup>
-  import { computed, ref, watch } from 'vue';
-  import { useBookStore } from '@/stores/useBookStore';
-  import { usePublisherStore } from '@/stores/usePublisherStore';
-  import FormAddOrUpdateBook from '@/components/FormAddOrUpdateBook.vue';
-  import Pagination from '@/components/Pagination.vue';
-  import { toast } from 'vue3-toastify';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { useBookStore } from '@/stores/useBookStore';
+import FormAddOrUpdateBook from '@/components/FormAddOrUpdateBook.vue';
+import Pagination from '@/components/Pagination.vue';
+import { toast } from 'vue3-toastify';
+import { useRoute, useRouter } from 'vue-router';
+import { useGenreStore } from '@/stores/useGenreStore';
 
-  const bookStore = useBookStore();
-  const publisherStore = usePublisherStore();
+const bookStore = useBookStore();
+const genreStore = useGenreStore();
 
-  // Id cuốn sách được chọn để sửa hoặc xóa
-  const selectedBookId = ref(null);
+const router = useRouter();
+const route = useRoute();
 
-  // show form add/update book ----------------------------
-  const showForm = ref(false);
+let genres = [
+  {
+    MATHELOAI: 'all',
+    TENTHELOAI: 'Tất cả',
+  },
+];
 
-  const isEditing = ref(false);
+// Id cuốn sách được chọn để sửa hoặc xóa
+const selectedBookId = ref(null);
 
-  // Hàm hiển thị form sửa sách
-  function showUpdateForm(id) {
-    isEditing.value = true;
-    showForm.value = true;
-    selectedBookId.value = id;
-  }
+// show form add/update book ----------------------------
+const showForm = ref(false);
 
-  // Theo dõi sự thay đổi của biến showForm
-  watch(() => showForm.value, (newValueShowForm) => {
-    if(!newValueShowForm) {
+const isEditing = ref(false);
+
+// Hàm hiển thị form sửa sách
+function showUpdateForm(id) {
+  isEditing.value = true;
+  showForm.value = true;
+  selectedBookId.value = id;
+}
+
+// Theo dõi sự thay đổi của biến showForm
+watch(
+  () => showForm.value,
+  (newValueShowForm) => {
+    if (!newValueShowForm) {
       isEditing.value = false;
       selectedBookId.value = null;
     }
-  });
-
-  // Hàm xóa dấu
-  function removeVietnameseTones(str) {
-    return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/đ/g, "d")
-      .replace(/Đ/g, "D");
   }
+);
 
-  // Tìm kiếm + lọc
-  const searchQuery = ref('');
-  const itemsFilter = ['Tất cả', 'Còn sách', 'Hết sách'];
-  const selectedFilter = ref('Tất cả');
+// Tìm kiếm + lọc
+const searchQuery = ref('');
+const filterItems = [
+  {
+    title: 'Tất cả',
+    value: 'all',
+  },
+  {
+    title: 'Còn sách',
+    value: 'available',
+  },
+  {
+    title: 'Hết sách',
+    value: 'unavailable',
+  },
+];
 
-  // Sắp xếp
-  const itemsSort = ['Mã sách'];
-  const selectedSortField = ref('Mã sách');
-  const typeSort = ref(true); // true: tăng dần
+const selectedFilter = ref('all');
 
-  // paging
-  const bookInPage = 5;
-  let currentPage = ref(1);
+const selectedGenreId = ref('all');
 
-  const filterBooks = computed(() => {
-    let books = bookStore.books;
+// Sắp xếp
+const itemsSort = ['Mã sách'];
+const selectedSortField = ref('Mã sách');
+const typeSort = ref(true); // true: tăng dần
 
-    // Sắp xếp
-    switch (selectedSortField.value) {
-      case 'Mã sách':
-        books.sort((a, b) => {
-          const numA = parseInt(a.MASACH.slice(1));
-          const numB = parseInt(b.MASACH.slice(1));
-          return typeSort.value ? (numA - numB) : (numB - numA);
-        })
-        break;
-      default:
-    }
+// paging
+const bookInPage = ref(5);
+let currentPage = ref(1);
+let totalPages = ref(1);
 
-    // Lọc theo trạng thái
-    if (selectedFilter.value === 'Còn sách') {
-      books = books.filter(b => b.SACHCONLAI > 0);
-    } else if (selectedFilter.value === 'Hết sách') {
-      books = books.filter(b => b.SACHCONLAI === 0);
-    }
+// Biến để delay khi người dùng gõ nhanh, sau khi người dùng ngưng gõ 0.5s thì mới call API
+let debounceTimer = null;
 
-    // Tìm kiếm theo tên
-    if (searchQuery.value?.trim()) {
-      const q = removeVietnameseTones(searchQuery.value.trim().toLowerCase());
-      books = books.filter(b => removeVietnameseTones(b.TENSACH.toLowerCase()).includes(q));
-    }
+// Biến để xác định khi nào thì load trạng thái từ URL xong
+let isInitialized = ref(false);
 
-    return books;
-  });
+const fetchData = async () => {
+  // Hủy bỏ setTimeout cũ của kí tự được nhập vào trước đó
+  clearTimeout(debounceTimer);
 
-  // Tính tổng số trang
-  const totalPage = computed(() => Math.ceil(filterBooks.value.length / bookInPage));
-
-  const showBooks = computed(() => {
-    // Đảm bảo currentPage không lớn hơn totalPage
-    if (currentPage.value > totalPage.value && totalPage.value > 0) {
-      currentPage.value = totalPage.value;
-    }
-    const start = bookInPage * (currentPage.value - 1);
-
-    return filterBooks.value.slice(start, start + bookInPage);
-  })
-
-
-  // Delete book -------------------
-
-  // Biến hiển thị thông báo xác nhận xóa
-  const showDeleteConfirm = ref(false);
-
-  // Open delete book confirm function
-  function openDeleteConfirm(id) {
-    selectedBookId.value = id;
-    showDeleteConfirm.value = true;
-  }
-
-  // Delete comfirm function
-  async function deleteConfirm() {
-    showDeleteConfirm.value = false;
-    
-    if(selectedBookId.value) {
-      const res = await bookStore.deleteBook(selectedBookId.value);
-      toast.success(res.message);
-      selectedBookId.value = null;
-
-      // Nếu xóa hết phần tử của trang cuối thì lùi về 1 trang
-      const start = bookInPage * (currentPage.value - 1);
-      if (start >= filterBooks.value.length && currentPage.value > 1) {
-        currentPage.value--;
+  // Chỉ khi người dùng ngưng gõ 0.5s thì call API
+  debounceTimer = setTimeout(
+    async () => {
+      if (isInitialized.value) {
+        router.replace({
+          path: '/book-management',
+          query: {
+            page: currentPage.value,
+            search: searchQuery.value,
+            genreId: selectedGenreId.value,
+            sort: typeSort.value,
+            filterState: selectedFilter.value,
+          },
+        });
       }
+
+      const res = await bookStore.fetchBooks(
+        currentPage.value,
+        bookInPage.value,
+        searchQuery.value,
+        selectedGenreId.value,
+        typeSort.value,
+        selectedFilter.value
+      );
+      totalPages.value = res.totalPages;
+    },
+    isInitialized.value ? 500 : 0
+  ); // Lần đầu không delay
+};
+
+watch(
+  [currentPage, searchQuery, selectedGenreId, typeSort, selectedFilter],
+  ([newPage], [oldPage]) => {
+    if (isInitialized.value) {
+      if (newPage === oldPage) currentPage.value = 1;
+      fetchData();
     }
   }
-  
-  // Cancel delete function
-  function deleteCancel() {
-    selectedBookId.value = null;
-    showDeleteConfirm.value = false;
-  }
+);
 
+// Delete book -------------------
+
+// Biến hiển thị thông báo xác nhận xóa
+const showDeleteConfirm = ref(false);
+
+// Open delete book confirm function
+function openDeleteConfirm(id) {
+  selectedBookId.value = id;
+  showDeleteConfirm.value = true;
+}
+
+// Delete comfirm function
+async function deleteConfirm() {
+  showDeleteConfirm.value = false;
+
+  if (selectedBookId.value) {
+    const res = await bookStore.deleteBook(selectedBookId.value);
+    if (bookStore.books.length - 1 === 0 && currentPage.value > 1) {
+      currentPage.value--;
+    } else {
+      fetchData();
+    }
+    toast.success(res.message);
+    selectedBookId.value = null;
+  }
+}
+
+// Cancel delete function
+function deleteCancel() {
+  selectedBookId.value = null;
+  showDeleteConfirm.value = false;
+}
+
+// Xử lý lúc vào trang lần đầu hoặc reload trang
+onMounted(async () => {
+  // Nếu URL có query thì đồng bộ lại, không trigger watch
+  if (route.query.page) currentPage.value = parseInt(route.query.page);
+  if (route.query.search) searchQuery.value = route.query.search;
+  if (route.query.genreId) selectedGenreId.value = route.query.genreId;
+  if (route.query.sort) {
+    typeSort.value = route.query.sort === 'true' ? true : false;
+  }
+  if (route.query.filterState) selectedFilter.value = route.query.filterState;
+
+  // Gọi API lần đầu
+  await genreStore.fetchGenres();
+  genres = [...genres, ...genreStore.genres];
+
+  await fetchData();
+
+  // Đánh dấu khởi tạo xong
+  isInitialized.value = true;
+});
+
+onUnmounted(() => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+});
 </script>
 
 <template>
   <v-container fluid class="pa-4">
     <!-- Toolbar -->
-    <v-row class="pa-4 bg-white rounded elevation-1 align-center" no-gutters >
+    <v-row class="pa-4 bg-white rounded elevation-1 align-center" no-gutters>
       <v-col class="d-flex align-center" cols="3">
         <v-text-field
           v-model="searchQuery"
@@ -171,20 +224,31 @@
         >
           <v-icon>mdi-sort-ascending</v-icon>
         </v-btn>
-        <v-btn
-          v-else
-          icon
-          variant="text"
-          @click="typeSort = !typeSort"
-        >
+        <v-btn v-else icon variant="text" @click="typeSort = !typeSort">
           <v-icon>mdi-sort-descending</v-icon>
         </v-btn>
       </v-col>
-      <v-col cols="3"></v-col>
+      <v-col cols="1"></v-col>
+      <v-col cols="2">
+        <v-select
+          label="Thể loại"
+          class="mx-2"
+          :items="genres"
+          item-title="TENTHELOAI"
+          item-value="MATHELOAI"
+          v-model="selectedGenreId"
+          hide-details
+          variant="outlined"
+          density="compact"
+          color="primary"
+        ></v-select>
+      </v-col>
       <v-col cols="2">
         <v-select
           label="Trạng thái"
-          :items="itemsFilter"
+          :items="filterItems"
+          item-title="title"
+          item-value="value"
           v-model="selectedFilter"
           hide-details
           variant="outlined"
@@ -193,10 +257,7 @@
         ></v-select>
       </v-col>
       <v-col cols="2" class="text-right">
-        <v-btn
-          color="primary"
-          @click="showForm = true"
-        >
+        <v-btn color="primary" @click="showForm = true">
           <v-icon class="mr-2">mdi-plus</v-icon>
           Thêm sách
         </v-btn>
@@ -205,10 +266,10 @@
 
     <!-- Table -->
     <v-table
-      style="height: 430px;"
+      style="height: 430px"
       class="mt-2 rounded elevation-1"
       striped="even"
-      v-show="bookStore.books.length ? true : false"
+      v-if="bookStore.books?.length ? true : false"
     >
       <thead class="bg-primary">
         <tr>
@@ -224,14 +285,14 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="book in showBooks" :key="book.MASACH" height="74">
-          <td>{{ book.MASACH }}</td>
+        <tr v-for="book in bookStore.books" :key="book?.MASACH" height="74">
+          <td>{{ book?.MASACH }}</td>
           <td>
             <v-img
               class="ma-1 rounded elevation-1"
               height="66"
               aspect-ratio="2/3"
-              :src="book.ANHBIA || '/imgs/no-cover.png'"
+              :src="book?.ANHBIA || '/imgs/no-cover.png'"
             >
               <template v-slot:error>
                 <v-img
@@ -243,31 +304,36 @@
               </template>
             </v-img>
           </td>
-          <td style="max-width: 400px; overflow: hidden;">{{ book.TENSACH }}</td>
-          <td>{{ book.DONGIA }}</td>
+          <td style="max-width: 400px; overflow: hidden">
+            {{ book?.TENSACH }}
+          </td>
+          <td>{{ book?.DONGIA }}</td>
           <td class="text-center">
             <v-chip color="primary" variant="flat">
-              {{ book.SOQUYEN }}
+              {{ book?.SOQUYEN }}
             </v-chip>
           </td>
           <td class="text-center">
-            <v-chip :color="book.SACHCONLAI > 0 ? 'success' : 'error'" variant="flat">
-              {{ book.SACHCONLAI }}
-            </v-chip>
-          </td>
-          <td>{{ book.TENTACGIA }}</td>
-          <td>{{ publisherStore.publishers.find(p => p.MANXB === book.MANXB)?.TENNXB }}</td>
-          <td class="text-center">
-            <v-tooltip
-              location="top"
+            <v-chip
+              :color="book?.SACHCONLAI > 0 ? 'success' : 'error'"
+              variant="flat"
             >
+              {{ book?.SACHCONLAI }}
+            </v-chip>
+          </td>
+          <td>{{ book?.TENTACGIA }}</td>
+          <td>
+            {{ book?.NHAXUATBAN?.TENNXB }}
+          </td>
+          <td class="text-center">
+            <v-tooltip location="top">
               <template v-slot:activator="{ props }">
                 <v-btn
                   icon
                   v-bind="props"
                   variant="text"
                   color="error"
-                  @click="openDeleteConfirm(book.MASACH)"
+                  @click="openDeleteConfirm(book?.MASACH)"
                 >
                   <v-icon>mdi-delete</v-icon>
                 </v-btn>
@@ -275,16 +341,14 @@
               <span>Xóa</span>
             </v-tooltip>
 
-            <v-tooltip
-              location="top"
-            >
+            <v-tooltip location="top">
               <template v-slot:activator="{ props }">
                 <v-btn
                   icon
                   v-bind="props"
                   variant="text"
                   color="primary"
-                  @click="showUpdateForm(book.MASACH)"
+                  @click="showUpdateForm(book?.MASACH)"
                 >
                   <v-icon>mdi-file-document-edit-outline</v-icon>
                 </v-btn>
@@ -293,20 +357,26 @@
             </v-tooltip>
           </td>
         </tr>
-
-        <!-- Hiển thị khi không tìm thấy sách phù hợp -->
-        <tr v-show="!showBooks.length">
-          <td colspan="8" class="text-center">Không tìm thấy sách phù hợp</td>
-        </tr>
       </tbody>
     </v-table>
-    
+
+    <div v-else class="d-flex justify-center mt-8">
+      <span class="text-body-1">{{
+        searchQuery
+          ? 'Không tìm thấy sách phù hợp'
+          : 'Hiện không có sách nào, bấm thêm sách để thêm sách mới'
+      }}</span>
+    </div>
 
     <!-- Delete confirm -->
     <v-overlay
       v-model="showDeleteConfirm"
       class="align-center justify-center"
-      @update:model-value="(val) => { if(!val) deleteCancel() }"
+      @update:model-value="
+        (val) => {
+          if (!val) deleteCancel();
+        }
+      "
     >
       <v-card>
         <v-card-title>Xác nhận xóa sách</v-card-title>
@@ -314,11 +384,7 @@
           Hành động này sẽ không thể khôi phục, bạn có chắc chắn muốn xóa không?
         </v-card-text>
         <v-card-actions class="justify-end">
-          <v-btn
-            variant="elevated"
-            color="error"
-            @click="deleteConfirm"
-          >
+          <v-btn variant="elevated" color="error" @click="deleteConfirm">
             Xóa
           </v-btn>
           <v-btn variant="tonal" @click="deleteCancel">Hủy</v-btn>
@@ -327,8 +393,7 @@
     </v-overlay>
 
     <!-- Pagination -->
-    <Pagination v-model="currentPage" :length="totalPage"></Pagination>
-
+    <Pagination v-model="currentPage" :length="totalPages"></Pagination>
   </v-container>
 
   <!-- Form thêm/sửa sách -->
@@ -336,6 +401,6 @@
     v-model="showForm"
     :is-editing="isEditing"
     :book-id="selectedBookId"
+    @submitted="fetchData"
   />
-  
 </template>

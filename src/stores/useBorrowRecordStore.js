@@ -11,7 +11,13 @@ export const useBorrowRecordStore = defineStore('borrowRecord', () => {
 
   // Hàm lấy dữ liệu các bản ghi yêu cầu mượn sách về từ backend
   async function fetchBorrowRecords(filter = 'pending', sort = 'asc', search = '') {
-    const res = await api.get(`/borrow-records?filter=${filter}&sort=${sort}&search=${search}`);
+    const res = await api.get('/borrow-records', {
+      params: {
+        filter,
+        sort,
+        search
+      }
+    });
     borrowRecords.value = res.data.data;
     return res.data;
   }

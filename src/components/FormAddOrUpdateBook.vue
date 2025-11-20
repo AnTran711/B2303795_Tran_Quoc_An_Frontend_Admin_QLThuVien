@@ -1,136 +1,146 @@
 <script setup>
-  import { useBookStore } from '@/stores/useBookStore';
-  import { usePublisherStore } from '@/stores/usePublisherStore';
-  import { useGenreStore } from '@/stores/useGenreStore';
-  import { reactive, ref, watch } from 'vue';
-  import { rules } from '@/utils/rules';
-  import { toast } from 'vue3-toastify';
+import { useBookStore } from '@/stores/useBookStore';
+import { usePublisherStore } from '@/stores/usePublisherStore';
+import { useGenreStore } from '@/stores/useGenreStore';
+import { onMounted, reactive, ref, watch } from 'vue';
+import { rules } from '@/utils/rules';
+import { toast } from 'vue3-toastify';
 
-  const bookStore = useBookStore();
-  const publisherStore = usePublisherStore();
-  const genreStore = useGenreStore();
+const bookStore = useBookStore();
+const publisherStore = usePublisherStore();
+const genreStore = useGenreStore();
 
-  const modelValue = defineModel();
+const modelValue = defineModel();
 
-  // Định nghĩa props
-  const props = defineProps({
-    isEditing: Boolean,
-    bookId: String
-  });
+const emit = defineEmits(['submitted']);
 
-  const book = reactive({
-    TENSACH: '',
-    ANHBIA: null,
-    MOTA: '',
-    DONGIA: '',
-    SOQUYEN: '',
-    NAMXUATBAN: '',
-    TENTACGIA: '',
-    MANXB: null,
-    THELOAI: []
-  });
+// Định nghĩa props
+const props = defineProps({
+  isEditing: Boolean,
+  bookId: String,
+});
 
-  // Instance của form
-  const formRef = ref(null);
+const book = reactive({
+  TENSACH: '',
+  ANHBIA: null,
+  MOTA: '',
+  DONGIA: '',
+  SOQUYEN: '',
+  NAMXUATBAN: '',
+  TENTACGIA: '',
+  MANXB: null,
+  THELOAI: [],
+});
 
-  // Biến kiểm tra form hợp lệ
-  const isFormValid = ref(false);
+// Instance của form
+const formRef = ref(null);
 
-  // Theo dõi sự thay đổi của biến isEditing
-  watch([() => props.isEditing, () => props.bookId], ([isEditing]) => {
-    if(isEditing) {
-      const currentUpdateBook = bookStore.books.find(b => b.MASACH === props.bookId);
-      Object.keys(book).forEach(key => {
-        if(key !== 'ANHBIA') {
-          book[key] = currentUpdateBook[key];
-        }
-      });
-    } else {
-      Object.keys(book).forEach(key => {
-        if (key === 'THELOAI') {
-          book[key] = [];
-        } else if (key === 'ANHBIA' || key === 'MANXB') {
-          book[key] = null;
-        } else {
-          book[key] = '';
-        }
-      });
-    }
-  });
+// Biến kiểm tra form hợp lệ
+const isFormValid = ref(false);
 
-  // Hàm gửi dữ liệu sách
-  async function handleSubmit() {
-    // Kiểm tra dữ liệu có hợp lệ hay không
-    const { valid } = await formRef.value.validate();
-
-    if(!valid) {
-      toast.error('Vui lòng kiểm tra lại thông tin nhập');
-      return;
-    }
-
-    // Gửi dữ liệu
-    const formData = new FormData();
-    Object.keys(book).forEach(key => {
-      if(key === 'ANHBIA') {
-        if (book[key] && book[key] instanceof File) {
-          formData.append(key, book[key]);
-        } else if (Array.isArray(book[key]) && book[key].length > 0) {
-          formData.append(key, book[key][0]);
-        }
-      } else if (Array.isArray(book[key])) {
-        book[key].forEach(value => formData.append(`${key}[]`, value));
+// Theo dõi sự thay đổi của biến isEditing
+watch([() => props.isEditing, () => props.bookId], ([isEditing]) => {
+  if (isEditing) {
+    const currentUpdateBook = bookStore.books.find(
+      (b) => b.MASACH === props.bookId
+    );
+    Object.keys(book).forEach((key) => {
+      if (key !== 'ANHBIA') {
+        book[key] = currentUpdateBook[key];
+      }
+    });
+  } else {
+    Object.keys(book).forEach((key) => {
+      if (key === 'THELOAI') {
+        book[key] = [];
+      } else if (key === 'ANHBIA' || key === 'MANXB') {
+        book[key] = null;
       } else {
+        book[key] = '';
+      }
+    });
+  }
+});
+
+// Hàm gửi dữ liệu sách
+async function handleSubmit() {
+  // Kiểm tra dữ liệu có hợp lệ hay không
+  const { valid } = await formRef.value.validate();
+
+  if (!valid) {
+    toast.error('Vui lòng kiểm tra lại thông tin nhập');
+    return;
+  }
+
+  // Gửi dữ liệu
+  const formData = new FormData();
+  Object.keys(book).forEach((key) => {
+    if (key === 'ANHBIA') {
+      if (book[key] && book[key] instanceof File) {
         formData.append(key, book[key]);
+      } else if (Array.isArray(book[key]) && book[key].length > 0) {
+        formData.append(key, book[key][0]);
       }
-    });
-
-    let res;
-    if(props.isEditing) {
-      res = await bookStore.updateBook(formData, props.bookId);
+    } else if (Array.isArray(book[key])) {
+      book[key].forEach((value) => formData.append(`${key}[]`, value));
     } else {
-      res = await bookStore.addBook(formData);
+      formData.append(key, book[key]);
     }
-    toast.success(res.message);
+  });
 
-    // Tắt overlay và form thêm/sửa sách
-    modelValue.value = false;
-
-    // Đặt lại giá trị mặc định cho các field của object book
-    Object.keys(book).forEach(key => {
-      if (key === 'THELOAI') {
-        book[key] = [];
-      } else if (key === 'ANHBIA' || key === 'MANXB') {
-        book[key] = null;
-      } else {
-        book[key] = '';
-      }
-    });
+  let res;
+  if (props.isEditing) {
+    res = await bookStore.updateBook(formData, props.bookId);
+  } else {
+    res = await bookStore.addBook(formData);
   }
+  toast.success(res.message);
 
-  // Hàm đóng form
-  const closeForm = () => {
-    modelValue.value = false;
-    Object.keys(book).forEach(key => {
-      if (key === 'THELOAI') {
-        book[key] = [];
-      } else if (key === 'ANHBIA' || key === 'MANXB') {
-        book[key] = null;
-      } else {
-        book[key] = '';
-      }
-    });
-  }
+  // Tắt overlay và form thêm/sửa sách
+  modelValue.value = false;
 
+  // Đặt lại giá trị mặc định cho các field của object book
+  Object.keys(book).forEach((key) => {
+    if (key === 'THELOAI') {
+      book[key] = [];
+    } else if (key === 'ANHBIA' || key === 'MANXB') {
+      book[key] = null;
+    } else {
+      book[key] = '';
+    }
+  });
+
+  // Báo cho cha để call API lại
+  emit('submitted');
+}
+
+// Hàm đóng form
+const closeForm = () => {
+  modelValue.value = false;
+  Object.keys(book).forEach((key) => {
+    if (key === 'THELOAI') {
+      book[key] = [];
+    } else if (key === 'ANHBIA' || key === 'MANXB') {
+      book[key] = null;
+    } else {
+      book[key] = '';
+    }
+  });
+};
+
+onMounted(async () => {
+  await publisherStore.fetchPublishers();
+  await genreStore.fetchGenres();
+});
 </script>
 
 <template>
-  <v-overlay
-    v-model="modelValue"
-    class="align-center justify-center"
-  >
+  <v-overlay v-model="modelValue" class="align-center justify-center">
     <v-card width="800" max-height="80vh" class="pa-4">
-      <v-card-title class="text-center">{{ props.isEditing ? 'Sửa sách' : 'Thêm sách' }}</v-card-title>
-      <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh;">
+      <v-card-title class="text-center">{{
+        props.isEditing ? 'Sửa sách' : 'Thêm sách'
+      }}</v-card-title>
+      <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh">
         <v-form ref="formRef" v-model="isFormValid" @keyup.enter="handleSubmit">
           <v-container>
             <v-row class="d-flex justify-center">
@@ -239,7 +249,9 @@
       </v-card-text>
       <v-card-actions class="justify-end">
         <v-spacer />
-        <v-btn variant="elevated" color="primary" @click="handleSubmit">Lưu</v-btn>
+        <v-btn variant="elevated" color="primary" @click="handleSubmit"
+          >Lưu</v-btn
+        >
         <v-btn variant="tonal" @click="closeForm">Đóng</v-btn>
       </v-card-actions>
     </v-card>

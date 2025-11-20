@@ -8,8 +8,17 @@ export const useBookStore = defineStore('book', () => {
   const loading = ref(false);
 
   //actions
-  async function fetchBooks() {
-    const res = await api.get('/books');
+  async function fetchBooks(page = 1, limit = 5, search = '', genreId = 'all', sort = true, filterState = 'all') {
+    const res = await api.get('/books', {
+      params: {
+        page,
+        limit,
+        search,
+        genreId,
+        sort,
+        filterState
+      }
+    });
     books.value = res.data.data;
     return res.data;
   }
@@ -18,7 +27,6 @@ export const useBookStore = defineStore('book', () => {
     const res = await api.post('/books', book, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-    books.value.push(res.data.data);
     return res.data;
   }
 
@@ -26,15 +34,11 @@ export const useBookStore = defineStore('book', () => {
     const res = await api.put(`/books/${bookId}`, book, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-    books.value = books.value.map(
-      b => b.MASACH === res.data.data.MASACH ? res.data.data : b
-    );
     return res.data;
   }
 
   async function deleteBook(id) {
     const res = await api.delete(`/books/${id}`);
-    books.value = books.value.filter(book => book.MASACH !== id);
     return res.data;
   }
 

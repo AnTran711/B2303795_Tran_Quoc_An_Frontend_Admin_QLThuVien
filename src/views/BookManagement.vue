@@ -172,7 +172,7 @@ onMounted(async () => {
   if (route.query.filterState) selectedFilter.value = route.query.filterState;
 
   // Gọi API lần đầu
-  await genreStore.fetchGenres();
+  await genreStore.fetchGenres(-1);
   genres = [...genres, ...genreStore.genres];
 
   await fetchData();
@@ -360,6 +360,7 @@ onUnmounted(() => {
       </tbody>
     </v-table>
 
+    <!-- Hiển thị khi không có sách -->
     <div v-else class="d-flex justify-center mt-8">
       <span class="text-body-1">{{
         searchQuery

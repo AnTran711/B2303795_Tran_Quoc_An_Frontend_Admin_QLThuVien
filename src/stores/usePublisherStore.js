@@ -10,8 +10,15 @@ export const usePublisherStore = defineStore('publisher', () => {
   // actions
 
   // Hàm lấy dữ liệu nhà xuất bản về từ backend
-  async function fetchPublishers() {
-    const res = await api.get('/publishers');
+  async function fetchPublishers(page = 1, limit = 7, search = '', sort = true) {
+    const res = await api.get('/publishers', {
+      params: {
+        page,
+        limit,
+        search,
+        sort
+      }
+    });
     publishers.value = res.data.data;
     return res.data;
   }
@@ -19,23 +26,18 @@ export const usePublisherStore = defineStore('publisher', () => {
   // Hàm thêm nhà xuất bản (gửi dữ liệu nhà xuất bản cần thêm lên backend)
   async function addPublisher(publisher) {
     const res = await api.post('/publishers', publisher);
-    publishers.value.push(res.data.data);
     return res.data;
   }
 
   // Hàm cập nhật nhà xuất bản
   async function updatePublisher(publisher, publisherId) {
     const res = await api.put(`/publishers/${publisherId}`, publisher);
-    publishers.value = publishers.value.map(
-      p => p.MANXB === res.data.data.MANXB ? res.data.data : p
-    );
     return res.data;
   }
 
   // Hàm xóa nhà xuất bản
   async function deletePublisher(id) {
     const res = await api.delete(`/publishers/${id}`);
-    publishers.value = publishers.value.filter(p => p.MANXB !== id);
     return res.data;
   }
 

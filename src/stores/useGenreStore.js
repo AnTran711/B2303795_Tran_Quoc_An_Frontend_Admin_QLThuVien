@@ -10,8 +10,15 @@ export const useGenreStore = defineStore('genre', () => {
   // actions
 
   // Hàm lấy dữ liệu thể loại về từ backend
-  async function fetchGenres() {
-    const res = await api.get('/genres');
+  async function fetchGenres(page = 1, limit = 7, search = '', sort = true) {
+    const res = await api.get('/genres', {
+      params: {
+        page,
+        limit,
+        search,
+        sort
+      }
+    });
     genres.value = res.data.data;
     return res.data;
   }
@@ -19,23 +26,18 @@ export const useGenreStore = defineStore('genre', () => {
   // Hàm thêm thể loại (gửi dữ liệu thể loại cần thêm lên backend)
   async function addGenre(genre) {
     const res = await api.post('/genres', genre);
-    genres.value.push(res.data.data);
     return res.data;
   }
 
   // Hàm cập nhật thể loại
   async function updateGenre(genre, genreId) {
     const res = await api.put(`/genres/${genreId}`, genre);
-    genres.value = genres.value.map(
-      g => g.MATHELOAI === res.data.data.MATHELOAI ? res.data.data : g
-    );
     return res.data;
   }
 
   // Hàm xóa thể loại
   async function deleteGenre(id) {
     const res = await api.delete(`/genres/${id}`);
-    genres.value = genres.value.filter(g => g.MATHELOAI !== id);
     return res.data;
   }
 

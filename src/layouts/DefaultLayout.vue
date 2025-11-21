@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import Header from '@/components/Header.vue';
 import SideBar from '@/components/SideBar.vue';
 import { useBookStore } from '@/stores/useBookStore';
@@ -12,13 +12,6 @@ const bookStore = useBookStore();
 const publisherStore = usePublisherStore();
 const genreStore = useGenreStore();
 const borrowRecordStore = useBorrowRecordStore();
-
-// fetch dữ liệu
-// onMounted(async () => {
-//   await bookStore.fetchBooks();
-//   await publisherStore.fetchPublishers();
-//   await genreStore.fetchGenres();
-// });
 
 const drawer = ref(true);
 

@@ -1,83 +1,88 @@
 <script setup>
-  import { useGenreStore } from '@/stores/useGenreStore';
-  import { reactive, ref, watch } from 'vue';
-  import { rules } from '@/utils/rules';
-  import { toast } from 'vue3-toastify';
+import { useGenreStore } from '@/stores/useGenreStore';
+import { reactive, ref, watch } from 'vue';
+import { rules } from '@/utils/rules';
+import { toast } from 'vue3-toastify';
 
-  const genreStore = useGenreStore();
+const genreStore = useGenreStore();
 
-  const modelValue = defineModel();
+const modelValue = defineModel();
 
-  // Định nghĩa props
-  const props = defineProps({
-    isEditing: Boolean,
-    genreId: String
-  });
+const emit = defineEmits(['submitted']);
 
-  const genre = reactive({
-    TENTHELOAI: '',
-    MOTA: ''
-  });
+// Định nghĩa props
+const props = defineProps({
+  isEditing: Boolean,
+  genreId: String,
+});
 
-  // Instance của form
-  const formRef = ref(null);
+const genre = reactive({
+  TENTHELOAI: '',
+  MOTA: '',
+});
 
-  // Biến kiểm tra form hợp lệ
-  const isFormValid = ref(false);
+// Instance của form
+const formRef = ref(null);
 
-  // Theo dõi sự thay đổi của biến isEditing
-  watch([() => props.isEditing, () => props.genreId], ([isEditing]) => {
-    if(isEditing) {
-      const currentUpdateGenre = genreStore.genres.find(g => g.MATHELOAI === props.genreId);
-      Object.keys(genre).forEach(key => {
-        genre[key] = currentUpdateGenre[key];
-      });
-    } else {
-      Object.keys(genre).forEach(key => genre[key] = '');
-    }
-  });
+// Biến kiểm tra form hợp lệ
+const isFormValid = ref(false);
 
-  // Hàm gửi dữ liệu thể loại
-  async function handleSubmit() {
-    // Kiểm tra dữ liệu có hợp lệ hay không
-    const { valid } = await formRef.value.validate();
+// Theo dõi sự thay đổi của biến isEditing
+watch([() => props.isEditing, () => props.genreId], ([isEditing]) => {
+  if (isEditing) {
+    const currentUpdateGenre = genreStore.genres.find(
+      (g) => g.MATHELOAI === props.genreId
+    );
+    Object.keys(genre).forEach((key) => {
+      genre[key] = currentUpdateGenre[key];
+    });
+  } else {
+    Object.keys(genre).forEach((key) => (genre[key] = ''));
+  }
+});
 
-    if(!valid) {
-      toast.error('Vui lòng kiểm tra lại thông tin nhập');
-      return;
-    }
+// Hàm gửi dữ liệu thể loại
+async function handleSubmit() {
+  // Kiểm tra dữ liệu có hợp lệ hay không
+  const { valid } = await formRef.value.validate();
 
-    let res;
-    if(props.isEditing) {
-      res = await genreStore.updateGenre(genre, props.genreId);
-    } else {
-      res = await genreStore.addGenre(genre);
-    }
-    toast.success(res.message);
-
-    // Tắt form
-    modelValue.value = false;
-
-    // Reset dữ liệu trong object genre
-    Object.keys(genre).forEach(key => genre[key] = '');
+  if (!valid) {
+    toast.error('Vui lòng kiểm tra lại thông tin nhập');
+    return;
   }
 
-  // Hàm đóng form
-  const closeFrom = () => {
-    modelValue.value = false;
-    Object.keys(genre).forEach(key => genre[key] = '');
-  }
+  // Tắt form
+  modelValue.value = false;
 
+  let res;
+  if (props.isEditing) {
+    res = await genreStore.updateGenre(genre, props.genreId);
+  } else {
+    res = await genreStore.addGenre(genre);
+  }
+  toast.success(res.message);
+
+  // Reset dữ liệu trong object genre
+  Object.keys(genre).forEach((key) => (genre[key] = ''));
+
+  // Báo cho cha để call API lại
+  emit('submitted');
+}
+
+// Hàm đóng form
+const closeFrom = () => {
+  modelValue.value = false;
+  Object.keys(genre).forEach((key) => (genre[key] = ''));
+};
 </script>
 
 <template>
-  <v-overlay
-    v-model="modelValue"
-    class="align-center justify-center"
-  >
+  <v-overlay v-model="modelValue" class="align-center justify-center">
     <v-card width="500" max-height="80vh" class="pa-4">
-      <v-card-title>{{ props.isEditing ? 'Sửa thể loại' : 'Thêm thể loại' }}</v-card-title>
-      <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh;">
+      <v-card-title>{{
+        props.isEditing ? 'Sửa thể loại' : 'Thêm thể loại'
+      }}</v-card-title>
+      <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh">
         <v-form ref="formRef" v-model="isFormValid" @keyup.enter="handleSubmit">
           <v-text-field
             v-show="props.isEditing"
@@ -107,7 +112,9 @@
       </v-card-text>
       <v-card-actions class="justify-end">
         <v-spacer />
-        <v-btn variant="elevated" color="primary" @click="handleSubmit">Lưu</v-btn>
+        <v-btn variant="elevated" color="primary" @click="handleSubmit"
+          >Lưu</v-btn
+        >
         <v-btn variant="tonal" @click="closeFrom">Đóng</v-btn>
       </v-card-actions>
     </v-card>

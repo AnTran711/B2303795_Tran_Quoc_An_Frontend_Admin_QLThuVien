@@ -1,86 +1,91 @@
 <script setup>
-  import { usePublisherStore } from '@/stores/usePublisherStore';
-  import { reactive, ref, watch } from 'vue';
-  import { rules } from '@/utils/rules';
-  import { toast } from 'vue3-toastify';
+import { usePublisherStore } from '@/stores/usePublisherStore';
+import { reactive, ref, watch } from 'vue';
+import { rules } from '@/utils/rules';
+import { toast } from 'vue3-toastify';
 
-  const publisherStore = usePublisherStore();
+const publisherStore = usePublisherStore();
 
-  const modelValue = defineModel();
+const modelValue = defineModel();
 
-  // Định nghĩa props
-  const props = defineProps({
-    isEditing: Boolean,
-    publisherId: String
-  });
+const emit = defineEmits(['submitted']);
 
-  const publisher = reactive({
-    TENNXB: '',
-    DIACHI: ''
-  });
+// Định nghĩa props
+const props = defineProps({
+  isEditing: Boolean,
+  publisherId: String,
+});
 
-  // Instance của form
-  const formRef = ref(null);
+const publisher = reactive({
+  TENNXB: '',
+  DIACHI: '',
+});
 
-  // Biến kiểm tra form hợp lệ
-  const isFormValid = ref(false);
+// Instance của form
+const formRef = ref(null);
 
-  // Theo dõi sự thay đổi của biến isEditing
-  watch([() => props.isEditing, () => props.publisherId], ([isEditing]) => {
-    if(isEditing) {
-      const currentUpdatePublisher = publisherStore.publishers.find(p => p.MANXB === props.publisherId);
-      Object.keys(publisher).forEach(key => {
-        publisher[key] = currentUpdatePublisher[key];
-      });
-    } else {
-      Object.keys(publisher).forEach(key => publisher[key] = '');
-    }
-  });
+// Biến kiểm tra form hợp lệ
+const isFormValid = ref(false);
 
-  // Hàm gửi dữ liệu nhà xuất bản
-  async function handleSubmit() {
-    // Kiểm tra dữ liệu có hợp lệ hay không
-    const { valid } = await formRef.value.validate();
+// Theo dõi sự thay đổi của biến isEditing
+watch([() => props.isEditing, () => props.publisherId], ([isEditing]) => {
+  if (isEditing) {
+    const currentUpdatePublisher = publisherStore.publishers.find(
+      (p) => p.MANXB === props.publisherId
+    );
+    Object.keys(publisher).forEach((key) => {
+      publisher[key] = currentUpdatePublisher[key];
+    });
+  } else {
+    Object.keys(publisher).forEach((key) => (publisher[key] = ''));
+  }
+});
 
-    if(!valid) {
-      toast.error('Vui lòng kiểm tra lại thông tin nhập');
-      return;
-    }
+// Hàm gửi dữ liệu nhà xuất bản
+async function handleSubmit() {
+  // Kiểm tra dữ liệu có hợp lệ hay không
+  const { valid } = await formRef.value.validate();
 
-    let res;
-    if(props.isEditing) {
-      res = await publisherStore.updatePublisher(publisher, props.publisherId);
-    } else {
-      res = await publisherStore.addPublisher(publisher);
-    }
-    toast.success(res.message);
-
-    // Tắt form
-    modelValue.value = false;
-
-    // Reset dữ liệu trong object publisher
-    Object.keys(publisher).forEach(key => publisher[key] = '');
+  if (!valid) {
+    toast.error('Vui lòng kiểm tra lại thông tin nhập');
+    return;
   }
 
-  // Hàm đóng form
-  const closeForm = () => {
-    // Tắt form
-    modelValue.value = false;
+  // Tắt form
+  modelValue.value = false;
 
-    // Reset dữ liệu trong object publisher
-    Object.keys(publisher).forEach(key => publisher[key] = '');
+  let res;
+  if (props.isEditing) {
+    res = await publisherStore.updatePublisher(publisher, props.publisherId);
+  } else {
+    res = await publisherStore.addPublisher(publisher);
   }
+  toast.success(res.message);
 
+  // Reset dữ liệu trong object publisher
+  Object.keys(publisher).forEach((key) => (publisher[key] = ''));
+
+  // Báo cho cha để call API lại
+  emit('submitted');
+}
+
+// Hàm đóng form
+const closeForm = () => {
+  // Tắt form
+  modelValue.value = false;
+
+  // Reset dữ liệu trong object publisher
+  Object.keys(publisher).forEach((key) => (publisher[key] = ''));
+};
 </script>
 
 <template>
-  <v-overlay
-    v-model="modelValue"
-    class="align-center justify-center"
-  >
+  <v-overlay v-model="modelValue" class="align-center justify-center">
     <v-card width="500" max-height="80vh" class="pa-4">
-      <v-card-title>{{ props.isEditing ? 'Sửa nhà xuất bản' : 'Thêm nhà xuất bản' }}</v-card-title>
-      <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh;">
+      <v-card-title>{{
+        props.isEditing ? 'Sửa nhà xuất bản' : 'Thêm nhà xuất bản'
+      }}</v-card-title>
+      <v-card-text class="pt-4" style="overflow-y: auto; max-height: 60vh">
         <v-form ref="formRef" v-model="isFormValid" @keyup.enter="handleSubmit">
           <v-text-field
             v-show="props.isEditing"
@@ -111,7 +116,9 @@
       </v-card-text>
       <v-card-actions class="justify-end">
         <v-spacer />
-        <v-btn variant="elevated" color="primary" @click="handleSubmit">Lưu</v-btn>
+        <v-btn variant="elevated" color="primary" @click="handleSubmit"
+          >Lưu</v-btn
+        >
         <v-btn variant="tonal" @click="closeForm">Đóng</v-btn>
       </v-card-actions>
     </v-card>

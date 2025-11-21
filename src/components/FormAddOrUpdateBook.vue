@@ -88,6 +88,9 @@ async function handleSubmit() {
     }
   });
 
+  // Tắt overlay và form thêm/sửa sách
+  modelValue.value = false;
+
   let res;
   if (props.isEditing) {
     res = await bookStore.updateBook(formData, props.bookId);
@@ -95,9 +98,6 @@ async function handleSubmit() {
     res = await bookStore.addBook(formData);
   }
   toast.success(res.message);
-
-  // Tắt overlay và form thêm/sửa sách
-  modelValue.value = false;
 
   // Đặt lại giá trị mặc định cho các field của object book
   Object.keys(book).forEach((key) => {
@@ -129,8 +129,8 @@ const closeForm = () => {
 };
 
 onMounted(async () => {
-  await publisherStore.fetchPublishers();
-  await genreStore.fetchGenres();
+  await publisherStore.fetchPublishers(-1);
+  await genreStore.fetchGenres(-1);
 });
 </script>
 

@@ -261,7 +261,20 @@ onUnmounted(() => {
           :key="record?._id"
         >
           <td>{{ record?.DOCGIA?.HOLOT + ' ' + record?.DOCGIA?.TEN }}</td>
-          <td style="max-width: 400px">{{ record?.SACH?.TENSACH }}</td>
+          <td style="max-width: 400px">
+            {{ record?.SACH?.TENSACH }}
+            <v-chip
+              v-show="
+                record?.TRANGTHAI === 'borrowed' &&
+                new Date().getTime() > new Date(record?.HANTRA).getTime()
+              "
+              class="ml-2"
+              variant="flat"
+              color="error"
+            >
+              Quá hạn
+            </v-chip>
+          </td>
           <td>{{ formatDate(record?.NGAYYEUCAU) }}</td>
           <td>{{ formatDate(record?.HANTRA) }}</td>
           <td>{{ formatDate(record?.NGAYTRA) }}</td>
